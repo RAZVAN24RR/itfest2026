@@ -2,7 +2,7 @@
 # STAGE 1: Build (Construire)
 # ==============================
 # Folosim o imagine Node LTS (Long Term Support) pentru a construi aplicația
-FROM node:20-alpine AS build
+FROM node:20-alpine3.20 AS build
 
 WORKDIR /app
 
