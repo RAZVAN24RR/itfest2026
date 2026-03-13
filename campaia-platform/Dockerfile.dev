@@ -1,0 +1,35 @@
+# ============================================
+# Campaia Platform - Development Dockerfile
+# ============================================
+# Optimized for local development with HMR (Hot Module Replacement)
+# Usage: docker-compose up frontend
+# ============================================
+
+FROM node:20-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies for node-gyp (if needed for native modules)
+RUN apk add --no-cache python3 make g++
+
+# Copy package files first (for better layer caching)
+COPY package.json package-lock.json* ./
+
+# Install dependencies (--legacy-peer-deps for Capacitor version compatibility)
+RUN npm ci --legacy-peer-deps
+
+# Copy the rest of the application
+# Note: In development, src/ is overridden by volume mounts in docker-compose
+COPY . .
+
+# Expose the Vite dev server port
+EXPOSE 5173
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:5173 || exit 1
+
+# Run Vite dev server with host binding for Docker
+# --host exposes the server to all network interfaces (required for Docker)
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
