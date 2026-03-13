@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+venv/
+.venv/
+*.egg
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+campaia-platform/dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Docker
+*.log
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Capacitor
+campaia-platform/android/
+campaia-platform/ios/
+
+# LocalStack
+localstack_data/
+
+# Coverage
+htmlcov/
+.coverage
+coverage.xml
