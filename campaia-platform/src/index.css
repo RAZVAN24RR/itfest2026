@@ -1,0 +1,45 @@
+@import "tailwindcss";
+/* Stiluri Default (Desktop) */
+.mobile-fixed-layout {
+    min-height: 100vh;
+}
+.scrollable-content {
+    min-height: 100vh;
+}
+
+/* Stiluri MOBILE (sub 768px) */
+@media only screen and (max-width: 768px) {
+
+    /* 1. Blocăm scroll-ul pe body ca să nu se miște toată pagina */
+    body, html {
+        overflow: hidden;
+        height: 100%;
+    }
+
+    /* 2. Containerul FIX - definește "rama" ecranului */
+    .mobile-fixed-layout {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: white; /* Sau culoarea de fundal a app-ului */
+
+        /* Aici definim marginile fixe de 15% + protecția hardware */
+        padding-top: calc(5vh + env(safe-area-inset-top));
+        padding-bottom: calc(5vh + env(safe-area-inset-bottom));
+
+        /* Flexbox ne ajută să gestionăm spațiul rămas */
+        display: flex;
+        flex-direction: column;
+        z-index: 9999; /* Să fie peste orice altceva */
+    }
+
+    /* 3. Zona de SCROLL - conținutul se mișcă doar aici */
+    .scrollable-content {
+        flex: 1; /* Ocupă tot spațiul rămas între padding-uri */
+        overflow-y: auto; /* Activează scroll-ul intern */
+        -webkit-overflow-scrolling: touch; /* Scroll fin pe iPhone */
+        min-height: 0;
+    }
+}
