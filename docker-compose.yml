@@ -1,0 +1,193 @@
+# Campaia - Docker Compose for Local Development
+# Usage: docker-compose up -d
+# Docs: See README.md for full instructions
+
+version: '3.8'
+
+services:
+  # ============================================
+  # DATABASE - PostgreSQL
+  # ============================================
+  db:
+    image: postgres:16-alpine
+    container_name: campaia-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-campaia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-campaia_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-campaia}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-campaia} -d ${POSTGRES_DB:-campaia}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - campaia-network
+
+  # ============================================
+  # CACHE - Redis
+  # ============================================
+  redis:
+    image: redis:7-alpine
+    container_name: campaia-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - campaia-network
+
+  # ============================================
+  # BACKEND - FastAPI (campaia-engine)
+  # ============================================
+  backend:
+    build:
+      context: ./campaia-engine
+      dockerfile: Dockerfile.dev
+    container_name: campaia-backend
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      # Mount source code for hot reload
+      - ./campaia-engine/app:/app/app:cached
+      - ./campaia-engine/tests:/app/tests:cached
+      - ./campaia-engine/migrations:/app/migrations:cached
+    environment:
+      # Database - using localhost since we're in host network mode
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-campaia}:${POSTGRES_PASSWORD:-campaia_secret}@localhost:5432/${POSTGRES_DB:-campaia}
+
+      # Redis
+      REDIS_URL: redis://localhost:6379/0
+
+      # Security
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
+      DEBUG: ${DEBUG:-true}
+      ENVIRONMENT: development
+
+      # CORS - Allow frontend
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173,http://frontend:5173
+
+      # External APIs (from .env file)
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      KLING_API_KEY: ${KLING_API_KEY:-}
+      KLING_API_SECRET: ${KLING_API_SECRET:-}
+      TIKTOK_APP_ID: ${TIKTOK_APP_ID:-}
+      TIKTOK_APP_SECRET: ${TIKTOK_APP_SECRET:-}
+      TIKTOK_ACCESS_TOKEN: ${TIKTOK_ACCESS_TOKEN:-}
+      TIKTOK_ADVERTISER_ID: ${TIKTOK_ADVERTISER_ID:-}
+      TIKTOK_ENVIRONMENT: ${TIKTOK_ENVIRONMENT:-sandbox}
+
+      # Ollama (Local AI)
+      OLLAMA_URL: http://localhost:11434
+
+      # AWS (LocalStack for dev, real AWS for prod)
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localhost:4566}
+      AWS_REGION: ${AWS_REGION:-eu-central-1}
+      S3_BUCKET_MEDIA: ${S3_BUCKET_MEDIA:-campaia-dev-media}
+      S3_BUCKET_INVOICES: ${S3_BUCKET_INVOICES:-campaia-dev-invoices}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # ============================================
+  # FRONTEND - React/Vite (campaia-platform)
+  # ============================================
+  frontend:
+    build:
+      context: ./campaia-platform
+      dockerfile: Dockerfile.dev
+    container_name: campaia-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount source code for hot reload (HMR)
+      - ./campaia-platform/src:/app/src:cached
+      - ./campaia-platform/public:/app/public:cached
+      - ./campaia-platform/index.html:/app/index.html:cached
+      # Don't mount node_modules (use container's)
+      - /app/node_modules
+    environment:
+      VITE_API_URL: http://localhost:8000
+      VITE_STRIPE_PUBLISHABLE_KEY: ${VITE_STRIPE_PUBLISHABLE_KEY:-}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+    depends_on:
+      - backend
+    networks:
+      - campaia-network
+
+  # ============================================
+  # OLLAMA - Local AI (LLM for script generation)
+  # ============================================
+  # NOTE: Commented out - using local Ollama installation on host
+  # If you don't have Ollama installed locally, uncomment this section
+  # ollama:
+  #   image: ollama/ollama:latest
+  #   container_name: campaia-ollama
+  #   restart: unless-stopped
+  #   ports:
+  #     - "11434:11434"
+  #   volumes:
+  #     - ollama_data:/root/.ollama
+  #   environment:
+  #     - OLLAMA_HOST=0.0.0.0
+  #   networks:
+  #     - campaia-network
+
+  # ============================================
+  # LOCALSTACK - Mock AWS Services (S3, SQS)
+  # ============================================
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: campaia-localstack
+    restart: unless-stopped
+    ports:
+      - "4566:4566" # LocalStack Gateway
+      - "4510-4559:4510-4559" # External services port range
+    environment:
+      SERVICES: s3,sqs
+      DEBUG: ${DEBUG:-0}
+      PERSISTENCE: 1
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - campaia-network
+
+# ============================================
+# NETWORKS
+# ============================================
+networks:
+  campaia-network:
+    driver: bridge
+    name: campaia-network
+
+# ============================================
+# VOLUMES
+# ============================================
+volumes:
+  postgres_data:
+    name: campaia-postgres-data
+  redis_data:
+    name: campaia-redis-data
+  localstack_data:
+    name: campaia-localstack-data
+  ollama_data:
+    name: campaia-ollama-data
