@@ -23,13 +23,16 @@ import {
     Heart,
     MessageCircle,
     Share2,
-    Music
+    Music,
+    X,
+    Video
 } from 'lucide-react';
 import campaignService, { type Campaign, CampaignStatus } from '../../services/campaignService';
 import targetingService, { type AudienceTarget } from '../../services/targetingService';
 import videoService, { type VideoListItem } from '../../services/videoService';
 import tiktokService from '../../services/tiktokService';
 import SimpleTargetingSelector, { TIKTOK_COUNTRIES, TIKTOK_AGE_GROUPS, TIKTOK_GENDERS, toTikTokTargeting } from '../../components/targeting/SimpleTargetingSelector';
+import VideoGallery from '../../components/VideoGallery';
 
 interface CampaignDetailsProps {
     campaignId: string;
@@ -44,6 +47,7 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [showGalleryModal, setShowGalleryModal] = useState(false);
 
     // Editable state
     const [name, setName] = useState('');
@@ -542,9 +546,20 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                                         }}
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 text-white/30">
+                                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 to-slate-900 text-white/30 p-6 text-center">
                                         <Smartphone size={48} className="mb-3" />
-                                        <p className="text-xs font-medium">{t.noVideo}</p>
+                                        <p className="text-xs font-medium mb-4">{t.noVideo}</p>
+                                        {!campaign.tiktok_campaign_id && (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    setShowGalleryModal(true);
+                                                }}
+                                                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white rounded-xl text-xs font-bold transition-all shadow-lg active:scale-95"
+                                            >
+                                                {lang === 'ro' ? 'Alege un video / Generează' : 'Choose a video'}
+                                            </button>
+                                        )}
                                     </div>
                                 )}
 
@@ -604,6 +619,17 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                         {/* Home indicator */}
                         <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-24 h-1 bg-white/50 rounded-full" />
                     </div>
+
+                    {/* Change Video Button */}
+                    {video && video.video_url && !campaign.tiktok_campaign_id && (
+                        <button
+                            onClick={() => setShowGalleryModal(true)}
+                            className="w-full py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 font-bold flex items-center justify-center gap-2 hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+                        >
+                            <Video size={18} className="text-purple-600" />
+                            {lang === 'ro' ? 'Schimbă Videoclipul' : 'Change Video'}
+                        </button>
+                    )}
 
                     {/* Publish to TikTok Button */}
                     {!campaign.tiktok_campaign_id ? (
@@ -677,6 +703,47 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                     </div>
                 </div>
             </div>
+
+            {/* Gallery Modal */}
+            {showGalleryModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[2.5rem] w-full max-w-5xl max-h-[90vh] overflow-y-auto p-8 relative shadow-2xl animate-in fade-in slide-in-from-bottom-8">
+                        <button
+                            onClick={() => setShowGalleryModal(false)}
+                            className="absolute top-6 right-6 p-2 bg-slate-100 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-full transition-colors z-10"
+                        >
+                            <X size={20} />
+                        </button>
+                        <div className="mb-2">
+                            <h2 className="text-2xl font-black text-slate-900">
+                                {lang === 'ro' ? 'Colecția ta de clipuri' : 'Your video collection'}
+                            </h2>
+                            <p className="text-sm text-slate-500 font-medium">
+                                {lang === 'ro' ? 'Alege un video din listă sau generează unul nou din meniul principal de Clipuri, apoi întoarce-te aici.' : 'Choose a video from the list or generate a new one from the main Videos menu, then return here.'}
+                            </p>
+                        </div>
+                        <div className="mt-8 border-t border-slate-100 pt-6">
+                            <VideoGallery
+                                onVideoSelect={async (selectedVideo) => {
+                                    try {
+                                        setIsSaving(true);
+                                        await campaignService.updateCampaign(campaignId, {
+                                            video_id: selectedVideo.id,
+                                            video_url: selectedVideo.video_url
+                                        } as any);
+                                        setShowGalleryModal(false);
+                                        loadData();
+                                    } catch (err) {
+                                        console.error(err);
+                                        alert(lang === 'ro' ? 'Eroare la asocierea videoclipului.' : 'Error attaching video.');
+                                        setIsSaving(false);
+                                    }
+                                }}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

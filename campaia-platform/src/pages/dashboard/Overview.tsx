@@ -9,7 +9,7 @@ export default function Overview({ campaigns, onCreateNew, lang, onDelete, onTog
             title: "Planșă de Bord",
             subtitle: "Monitorizează și optimizează campaniile tale în timp real.",
             emptyTitle: "Încă nu ai lansat nicio campanie",
-            emptyDesc: "Transformă produsele tale în povești virale. Prima ta campanie este la doar câteva click-uri distanță.",
+            emptyDesc: "Transformă proiectele comunității în povești virale. Prima ta campanie este la doar câteva click-uri distanță.",
             btn: "Lansează Prima Campanie",
             newBtn: "Campanie Nouă",
             viewBtn: "Vezi Detalii"

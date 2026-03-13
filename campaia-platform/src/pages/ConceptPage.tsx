@@ -2,8 +2,8 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
-import {Lightbulb, Target, BrainCircuit, Users, Zap} from 'lucide-react';
-import {nanoid} from "nanoid";
+import { Lightbulb, Target, BrainCircuit, Users, Zap } from 'lucide-react';
+import { nanoid } from "nanoid";
 
 export default function Concept() {
     const { language } = useLanguage();
@@ -11,13 +11,13 @@ export default function Concept() {
     const content = {
         ro: {
             heroTitle: "Viziunea Campaia",
-            heroSub: "Tehnologie care transformă modul în care afacerile comunică.",
+            heroSub: "Tehnologie care transformă modul în care comunitățile comunică.",
             conceptTitle: "Conceptul",
-            conceptDesc: "Campaia este o platformă SaaS care elimină complexitatea publicității pe TikTok. Prin integrarea Inteligenței Artificiale, transformăm un simplu URL de produs într-o campanie completă. Sistemul nostru analizează punctele forte ale produsului, tendințele actuale și psihologia cumpărătorului pentru a genera scenarii optimizate pentru conversie, eliminând orele de brainstorming și editare manuală.",
+            conceptDesc: "Campaia este o platformă care sprijină inițiativele comunitare pe TikTok. Prin integrarea Inteligenței Artificiale, transformăm ideile asociațiilor într-o campanie completă. Sistemul nostru analizează punctele forte ale proiectului, tendințele actuale și nevoile publicului pentru a genera mesaje optimizate pentru impact social, eliminând orele de brainstorming și editare manuală.",
             missionTitle: "Misiunea Noastră",
-            missionDesc: "Misiunea noastră este să democratizăm accesul la publicitatea digitală de înaltă performanță. Credem că orice antreprenor merită instrumente de nivel enterprise. Ne propunem să egalizăm șansele, oferind afacerilor mici puterea de a concura cu marile branduri prin conținut generat inteligent, rapid și eficient din punct de vedere al costurilor.",
+            missionDesc: "Misiunea noastră este să democratizăm accesul la vizibilitate digitală de înaltă performanță pentru ONG-uri. Credem că orice inițiativă comunitară merită instrumente de nivel enterprise. Ne propunem să egalizăm șansele, oferind asociațiilor puterea de a concura pe atenție cu marile branduri prin conținut generat inteligent, rapid și eficient din punct de vedere al costurilor.",
             stat1: "Accesibilitate",
-            stat1Desc: "Marketing pro, fără agenții.",
+            stat1Desc: "Impact pro, fără agenții.",
             stat2: "Viteză",
             stat2Desc: "De la idee la viral în secunde.",
             stat3: "Inovație",
@@ -25,13 +25,13 @@ export default function Concept() {
         },
         en: {
             heroTitle: "The Campaia Vision",
-            heroSub: "Technology that transforms how businesses communicate.",
+            heroSub: "Technology that transforms how communities communicate.",
             conceptTitle: "The Concept",
-            conceptDesc: "Campaia is a SaaS platform that strips away the complexity of TikTok advertising. By integrating Artificial Intelligence, we turn a simple product URL into a full-fledged campaign. Our system analyzes product strengths, current trends, and buyer psychology to generate conversion-optimized scripts, eliminating hours of brainstorming and manual editing.",
+            conceptDesc: "Campaia is a platform that empowers community initiatives on TikTok. By integrating Artificial Intelligence, we turn association's ideas into a full-fledged campaign. Our system analyzes project strengths, current trends, and audience needs to generate impact-optimized scripts, eliminating hours of brainstorming and manual editing.",
             missionTitle: "Our Mission",
-            missionDesc: "Our mission is to democratize access to high-performance digital advertising. We believe every entrepreneur deserves enterprise-level tools. We aim to level the playing field, giving small businesses the power to compete with big brands through intelligently generated, fast, and cost-effective content.",
+            missionDesc: "Our mission is to democratize access to high-performance digital visibility for NGOs. We believe every community initiative deserves enterprise-level tools. We aim to level the playing field, giving associations the power to compete for attention with big brands through intelligently generated, fast, and cost-effective content.",
             stat1: "Accessibility",
-            stat1Desc: "Pro marketing, no agencies.",
+            stat1Desc: "Pro impact, no agencies.",
             stat2: "Speed",
             stat2Desc: "From idea to viral in seconds.",
             stat3: "Innovation",

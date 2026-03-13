@@ -94,11 +94,22 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({
         return configs[status];
     };
 
-    const handleVideoClick = (video: VideoListItem) => {
+    const handlePreviewClick = (video: VideoListItem) => {
         if (video.status === 'COMPLETED') {
             setSelectedVideo(video);
             setIsPreviewOpen(true);
-            onVideoSelect?.(video);
+        }
+    };
+
+    const handleVideoClick = (video: VideoListItem) => {
+        if (video.status === 'COMPLETED') {
+            if (onVideoSelect) {
+                // If in selection mode, select it directly
+                onVideoSelect(video);
+            } else {
+                // If no selection mode (just gallery), preview it
+                handlePreviewClick(video);
+            }
         }
     };
 
@@ -207,7 +218,7 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleVideoClick(video);
+                                            handlePreviewClick(video);
                                         }}
                                         className="bg-white/20 backdrop-blur-md hover:bg-white/40 text-white p-2 rounded-xl border border-white/20 transition-all active:scale-90"
                                         title="Previzualizare"

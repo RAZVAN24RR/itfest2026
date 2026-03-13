@@ -69,6 +69,9 @@ class StripeService:
             raise ValueError(f"Package {package_id} not found")
 
         try:
+            if not settings.stripe_secret_key:
+                return success_url.replace("{CHECKOUT_SESSION_ID}", f"MOCK_SESSION_{package_id}_{package['tokens']}")
+
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
                 line_items=[{

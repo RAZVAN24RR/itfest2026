@@ -10,7 +10,7 @@ services:
   # ============================================
   db:
     image: postgres:16-alpine
-    container_name: campaia-db
+    container_name: itfest-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-campaia}
@@ -26,14 +26,14 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - campaia-network
+      - itfest-network
 
   # ============================================
   # CACHE - Redis
   # ============================================
   redis:
     image: redis:7-alpine
-    container_name: campaia-redis
+    container_name: itfest-redis
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -46,7 +46,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - campaia-network
+      - itfest-network
 
   # ============================================
   # BACKEND - FastAPI (campaia-engine)
@@ -55,7 +55,7 @@ services:
     build:
       context: ./campaia-engine
       dockerfile: Dockerfile.dev
-    container_name: campaia-backend
+    container_name: itfest-backend
     restart: unless-stopped
     network_mode: host
     volumes:
@@ -98,8 +98,8 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
       AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-http://localhost:4566}
       AWS_REGION: ${AWS_REGION:-eu-central-1}
-      S3_BUCKET_MEDIA: ${S3_BUCKET_MEDIA:-campaia-dev-media}
-      S3_BUCKET_INVOICES: ${S3_BUCKET_INVOICES:-campaia-dev-invoices}
+      S3_BUCKET_MEDIA: ${S3_BUCKET_MEDIA:-itfest-dev-media}
+      S3_BUCKET_INVOICES: ${S3_BUCKET_INVOICES:-itfest-dev-invoices}
     depends_on:
       db:
         condition: service_healthy
@@ -113,7 +113,7 @@ services:
     build:
       context: ./campaia-platform
       dockerfile: Dockerfile.dev
-    container_name: campaia-frontend
+    container_name: itfest-frontend
     restart: unless-stopped
     ports:
       - "5173:5173"
@@ -131,7 +131,7 @@ services:
     depends_on:
       - backend
     networks:
-      - campaia-network
+      - itfest-network
 
   # ============================================
   # OLLAMA - Local AI (LLM for script generation)
@@ -140,7 +140,7 @@ services:
   # If you don't have Ollama installed locally, uncomment this section
   # ollama:
   #   image: ollama/ollama:latest
-  #   container_name: campaia-ollama
+  #   container_name: itfest-ollama
   #   restart: unless-stopped
   #   ports:
   #     - "11434:11434"
@@ -149,14 +149,14 @@ services:
   #   environment:
   #     - OLLAMA_HOST=0.0.0.0
   #   networks:
-  #     - campaia-network
+  #     - itfest-network
 
   # ============================================
   # LOCALSTACK - Mock AWS Services (S3, SQS)
   # ============================================
   localstack:
     image: localstack/localstack:3.0
-    container_name: campaia-localstack
+    container_name: itfest-localstack
     restart: unless-stopped
     ports:
       - "4566:4566" # LocalStack Gateway
@@ -169,25 +169,25 @@ services:
       - localstack_data:/var/lib/localstack
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
-      - campaia-network
+      - itfest-network
 
 # ============================================
 # NETWORKS
 # ============================================
 networks:
-  campaia-network:
+  itfest-network:
     driver: bridge
-    name: campaia-network
+    name: itfest-network
 
 # ============================================
 # VOLUMES
 # ============================================
 volumes:
   postgres_data:
-    name: campaia-postgres-data
+    name: itfest-postgres-data
   redis_data:
-    name: campaia-redis-data
+    name: itfest-redis-data
   localstack_data:
-    name: campaia-localstack-data
+    name: itfest-localstack-data
   ollama_data:
-    name: campaia-ollama-data
+    name: itfest-ollama-data

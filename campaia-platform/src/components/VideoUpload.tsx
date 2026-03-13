@@ -186,7 +186,7 @@ const VideoUpload: React.FC<VideoUploadProps> = ({
                                 type="text"
                                 value={title}
                                 onChange={(e) => setTitle(e.target.value)}
-                                placeholder="Ex: Reclamă produse cosmetice"
+                                placeholder="Ex: Voluntariat la asociație"
                                 className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 outline-none transition-all"
                                 disabled={uploadState === 'uploading'}
                             />

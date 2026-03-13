@@ -22,11 +22,11 @@ export default function Terms() {
                 },
                 {
                     title: "2. Modelul de Publicare (Publisher Model)",
-                    body: "Campaia este o platformă de automatizare marketing. Este crucial să înțelegeți că materialele publicitare create pe platforma noastră sunt publicate și distribuite exclusiv prin intermediul contului nostru oficial de TikTok (@CampaiaAi). Dumneavoastră, în calitate de client, nu vă conectați propriul cont de publicitate, ci achiziționați spațiu și servicii creative pe infrastructura noastră."
+                    body: "Campaia este o platformă de comunicare digitală pentru inițiative comunitare. Este crucial să înțelegeți că materialele create pe platforma noastră sunt publicate și distribuite exclusiv prin intermediul contului nostru oficial de TikTok (@CampaiaAi). Dumneavoastră, în calitate de asociație sau grup de inițiativă, nu vă conectați propriul cont, ci apelați la spațiul și serviciile creative de pe infrastructura noastră."
                 },
                 {
                     title: "3. Proprietate Intelectuală și Licențiere",
-                    body: "Prin trimiterea de conținut (link-uri de produs, descrieri, imagini) către Campaia, ne acordați o licență neexclusivă, globală și gratuită de a utiliza, reproduce și afișa acest conținut pe contul @CampaiaAi strict în scopul derulării campaniei dumneavoastră."
+                    body: "Prin trimiterea de conținut (link-uri ale asociației, descrieri de proiect, imagini) către Campaia, ne acordați o licență neexclusivă, globală și gratuită de a utiliza, reproduce și afișa acest conținut pe contul @CampaiaAi strict în scopul derulării campaniei dumneavoastră."
                 },
                 {
                     title: "4. Plăți și Bugete",
@@ -53,7 +53,7 @@ export default function Terms() {
                 },
                 {
                     title: "2. The Publisher Model",
-                    body: "Campaia is a marketing automation platform. It is crucial to understand that ad campaigns created on our platform are published and distributed exclusively through our official TikTok account (@CampaiaAi). You, as a client, do not connect your own ad account; rather, you purchase ad space and creative services on our infrastructure."
+                    body: "Campaia is a digital communication platform for community initiatives. It is crucial to understand that campaigns created on our platform are published and distributed exclusively through our official TikTok account (@CampaiaAi). You, as an association or initiative group, do not connect your own account; rather, you utilize the space and creative services on our infrastructure."
                 },
                 {
                     title: "3. Intellectual Property & Licensing",

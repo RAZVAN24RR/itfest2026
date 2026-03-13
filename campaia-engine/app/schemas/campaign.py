@@ -39,6 +39,8 @@ class CampaignUpdate(BaseModel):
     product_desc: str | None = Field(None, max_length=5000)
     ai_script: str | None = Field(None, max_length=10000)
     status: CampaignStatus | None = None
+    video_id: UUID | None = None
+    video_url: str | None = None
 
 
 class CampaignResponse(BaseModel):

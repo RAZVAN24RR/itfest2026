@@ -153,6 +153,32 @@ async def verify_session(
     stripe.api_key = settings.stripe_secret_key
     
     try:
+        if session_id.startswith("MOCK_SESSION_") and not settings.stripe_secret_key:
+            parts = session_id.split("_")
+            package_id = parts[2]
+            tokens = int(parts[3])
+            
+            wallet_service = WalletService(db)
+            existing_transactions = await wallet_service.get_transactions(user.id, limit=100)
+            for tx in existing_transactions:
+                if tx.stripe_session_id == session_id:
+                    wallet = await wallet_service.get_or_create_wallet(user.id)
+                    return WalletResponse(
+                        balance=wallet.balance,
+                        lifetime_purchased=wallet.lifetime_purchased,
+                    )
+                    
+            wallet = await wallet_service.add_tokens(
+                user_id=user.id,
+                amount=tokens,
+                description=f"Purchased {package_id} package (MOCK)",
+                stripe_session_id=session_id,
+            )
+            return WalletResponse(
+                balance=wallet.balance,
+                lifetime_purchased=wallet.lifetime_purchased,
+            )
+
         # Retrieve the session from Stripe
         session = stripe.checkout.Session.retrieve(session_id)
         

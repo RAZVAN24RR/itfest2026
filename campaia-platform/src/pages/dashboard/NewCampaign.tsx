@@ -84,8 +84,8 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
             s1: { title: "Detaliile Campaniei", sub: "Cum se numește campania și unde trimitem traficul?", labelName: "Nume Campanie", labelUrl: "Link Destinație (Website / Promo)", labelBudget: "Buget Promovare (tokens)", btnNext: "Pasul Următor", tokensPerDay: "tokens", viewsEstimate: "Vizualizări estimate" },
             s2: {
                 title: "AI Creative Assistant",
-                sub: "Descrie produsul, alege tonul și AI-ul generează 5 variante de script.",
-                labelDesc: "Despre ce este produsul?",
+                sub: "Descrie inițiativa, alege tonul și AI-ul generează 5 variante de script.",
+                labelDesc: "Despre ce este inițiativa/proiectul?",
                 labelTone: "Alege tonul scriptului",
                 btnBack: "Înapoi",
                 btnGen: "Generare Scripturi",
@@ -120,7 +120,7 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
                 noVideo: "Niciun video selectat"
             },
             success: { title: "Campanie Trimisă!", sub: "Echipa noastră a preluat scriptul.", back: "Înapoi la Dashboard" },
-            loading: ["Analizăm produsul...", "Scriem hook-uri virale...", "Optimizăm pentru TikTok...", "Generăm variante..."]
+            loading: ["Analizăm documentația...", "Scriem mesaje cheie...", "Optimizăm pentru TikTok...", "Generăm variante..."]
         },
         en: {
             steps: { s1: "Setup", s2: "AI Creative", s3: "Audience", s4: "Video Creative", s5: "Review" },
@@ -509,7 +509,7 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
                                 <textarea
                                     id={'description'}
                                     rows={5}
-                                    placeholder={lang === 'ro' ? "Ex: Descrie avantajele produsului tău..." : "Ex: Describe your product advantages..."}
+                                    placeholder={lang === 'ro' ? "Ex: Descrie importanța acestui proiect de voluntariat..." : "Ex: Describe the importance of this volunteering project..."}
                                     className="block w-full rounded-[2rem] border-2 border-slate-50 bg-slate-50/50 focus:bg-white p-6 text-base font-medium text-slate-900 shadow-sm focus:border-purple-600 focus:ring-4 focus:ring-purple-600/5 transition-all outline-none resize-none placeholder:text-slate-300"
                                     value={formData.productDesc}
                                     onChange={(e) => setFormData({ ...formData, productDesc: e.target.value })}

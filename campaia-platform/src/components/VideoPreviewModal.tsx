@@ -35,7 +35,6 @@ const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({
     const videoRef = useRef<HTMLVideoElement>(null);
     const modalRef = useRef<HTMLDivElement>(null);
     const [isBuffering, setIsBuffering] = useState(true);
-    const [canPlay, setCanPlay] = useState(false);
 
     // Handle escape key to close
     useEffect(() => {
@@ -48,7 +47,6 @@ const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({
             document.body.style.overflow = 'hidden';
             // Reset states when opening
             setIsBuffering(true);
-            setCanPlay(false);
         }
 
         return () => {
@@ -65,7 +63,6 @@ const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({
     }, [isOpen]);
 
     const handleCanPlay = useCallback(() => {
-        setCanPlay(true);
         setIsBuffering(false);
     }, []);
 
@@ -112,7 +109,8 @@ const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({
 
     return (
         <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+            className="fixed inset-0 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+            style={{ zIndex: 9999 }}
             onClick={handleBackdropClick}
         >
             <div
@@ -148,9 +146,10 @@ const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({
                         autoPlay
                         playsInline
                         preload="auto"
-                        className={`w-full max-h-[60vh] object-contain transition-opacity duration-300 ${canPlay ? 'opacity-100' : 'opacity-0'}`}
+                        className="w-full max-h-[60vh] object-contain transition-opacity duration-300"
                         controlsList="nodownload"
                         onCanPlay={handleCanPlay}
+                        onLoadedData={handleCanPlay}
                         onWaiting={handleWaiting}
                         onPlaying={handlePlaying}
                     />
