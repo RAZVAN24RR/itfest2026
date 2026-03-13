@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "campaia-engine"
+version = "0.1.0"
+description = "Backend"
+authors = ["RAZVAN24RR <razvanandreipasaran@gmail.com>"]
+readme = "README.md"
+packages = []
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.121.1"
+uvicorn = {extras = ["standard"], version = "^0.38.0"}
+pydantic-settings = "^2.7.0"
+sqlalchemy = "^2.0.45"
+asyncpg = "^0.31.0"
+alembic = "^1.18.1"
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-jose = {extras = ["cryptography"], version = "^3.5.0"}
+email-validator = "^2.3.0"
+stripe = "^11.0.0"
+httpx = "^0.28.0"
+PyJWT = "^2.8.0"
+reportlab = "^4.0.0"
+boto3 = "^1.34.0"
+aiosmtplib = "^5.0.0"
+python-multipart = "^0.0.20"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^9.0.0"
+httpx = "^0.28.1"
+ruff = "^0.14.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+

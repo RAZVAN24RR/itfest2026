@@ -1,0 +1,55 @@
+# ============================================
+# Campaia Engine - Development Dockerfile
+# ============================================
+# Optimized for local development with hot reload
+# Usage: docker-compose up backend
+# ============================================
+
+FROM python:3.12-slim
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    # Poetry settings
+    POETRY_VERSION=1.8.2 \
+    POETRY_HOME="/opt/poetry" \
+    POETRY_VIRTUALENVS_CREATE=false \
+    POETRY_NO_INTERACTION=1
+
+# Add Poetry to PATH
+ENV PATH="$POETRY_HOME/bin:$PATH"
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 -
+
+# Copy dependency files first (for better layer caching)
+COPY pyproject.toml poetry.lock* ./
+
+# Generate lock file if it doesn't exist, then install dependencies
+RUN poetry lock --no-update || true && poetry install --with dev --no-root
+
+# Copy the rest of the application
+# Note: In development, this is overridden by volume mounts in docker-compose
+COPY . .
+
+# Expose the port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run with hot reload for development
+# uvicorn will watch for file changes and auto-reload
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
