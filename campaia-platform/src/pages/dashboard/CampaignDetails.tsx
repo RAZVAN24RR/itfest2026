@@ -651,7 +651,6 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                                 onClick={async () => {
                                     setIsPublishing(true);
                                     try {
-                                        setIsPublishing(true);
                                         const result = await tiktokService.publishCampaign(campaignId);
                                         if (result.success) {
                                             // Refresh campaign data
@@ -671,7 +670,7 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                                         setIsPublishing(false);
                                     }
                                 }}
-                                disabled={isPublishing || !video}
+                                disabled={isPublishing || !video?.video_url}
                                 className="w-full bg-slate-900 hover:bg-black text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all disabled:opacity-50"
                             >
                                 {isPublishing ? (

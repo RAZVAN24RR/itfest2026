@@ -12,6 +12,8 @@ export default function Integrations() {
     const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
     const [metrics, setMetrics] = useState<any>(null);
     const [isLoadingMetrics, setIsLoadingMetrics] = useState(false);
+    /** false = user not allowed (403) or failed; true = loaded */
+    const [metricsVisible, setMetricsVisible] = useState(true);
 
     const t = {
         ro: {
@@ -30,6 +32,9 @@ export default function Integrations() {
             credentials_missing: "Credențialele TikTok lipseasc din config.",
             sandbox_explorer: "Campaign Explorer",
             sandbox_sub: "Campanii active în Sandbox.",
+            publish_checklist: "Checklist publicare Sandbox",
+            publish_steps: "1) Credențiale TikTok în .env · 2) Campanie cu video (URL public) · 3) Campaign Details → Publică pe TikTok · 4) Verifică în Ads Manager",
+            metrics_locked: "Metrici globale doar pentru conturi admin (vezi TIKTOK_METRICS_ADMIN_EMAILS).",
             no_campaigns: "Nu am găsit campanii.",
             metrics_title: "Performanță Globală (30 zile)",
             spend: "Cheltuit",
@@ -55,6 +60,9 @@ export default function Integrations() {
             credentials_missing: "TikTok credentials missing from config.",
             sandbox_explorer: "Campaign Explorer",
             sandbox_sub: "Active sessions in Sandbox.",
+            publish_checklist: "Sandbox publish checklist",
+            publish_steps: "1) TikTok creds in .env · 2) Campaign with video (public URL) · 3) Campaign Details → Publish to TikTok · 4) Confirm in Ads Manager",
+            metrics_locked: "Global metrics only for admin emails (TIKTOK_METRICS_ADMIN_EMAILS).",
             no_campaigns: "No campaigns found.",
             metrics_title: "Global Performance (30 days)",
             spend: "Spent",
@@ -97,14 +105,18 @@ export default function Integrations() {
     const fetchMetrics = async () => {
         try {
             setIsLoadingMetrics(true);
+            setMetricsVisible(true);
             const data = await tiktokService.getMetrics(30);
-            // Aggregate metrics from daily data if needed, or just take first entry for total account level
-            // In AUCTION_ADVERTISER mode with no dimensions, we might get one row
             if (data.list && data.list.length > 0) {
                 setMetrics(data.list[0].metrics);
             }
-        } catch (err) {
-            console.error('Failed to fetch TikTok metrics:', err);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : '';
+            if (msg.includes('Only admin') || msg.includes('403')) {
+                setMetricsVisible(false);
+            } else {
+                console.error('Failed to fetch TikTok metrics:', err);
+            }
         } finally {
             setIsLoadingMetrics(false);
         }
@@ -126,19 +138,33 @@ export default function Integrations() {
                     <h2 className="text-3xl font-black text-slate-900 tracking-tight">{t.title}</h2>
                     <p className="text-slate-500 font-medium mt-1">{t.sub}</p>
                 </div>
-                <div className="bg-amber-100/50 text-amber-700 px-4 py-2 rounded-2xl border border-amber-200 flex items-center gap-2">
-                    <ShieldCheck size={18} />
-                    <span className="text-xs font-black uppercase tracking-widest">Admin Access Only</span>
+                <div className="flex flex-wrap gap-2">
+                    <div className="bg-emerald-50 text-emerald-800 px-4 py-2 rounded-2xl border border-emerald-200 flex items-center gap-2">
+                        <Rocket size={18} />
+                        <span className="text-xs font-black uppercase tracking-widest">{t.publish_checklist}</span>
+                    </div>
+                    <div className="bg-amber-100/50 text-amber-700 px-4 py-2 rounded-2xl border border-amber-200 flex items-center gap-2">
+                        <ShieldCheck size={18} />
+                        <span className="text-xs font-black uppercase tracking-widest">TikTok metrics · admin</span>
+                    </div>
                 </div>
             </div>
 
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-                <MetricCard icon={<TrendingUp size={24} />} label={t.spend} value={`${metrics?.spend || '0.00'}`} sub={status?.currency || 'EUR'} color="text-emerald-600" bg="bg-emerald-50" />
-                <MetricCard icon={<Users size={24} />} label={t.impressions} value={`${metrics?.impressions || '0'}`} color="text-blue-600" bg="bg-blue-50" />
-                <MetricCard icon={<MousePointer2 size={24} />} label={t.clicks} value={`${metrics?.clicks || '0'}`} color="text-purple-600" bg="bg-purple-50" />
-                <MetricCard icon={<BarChart3 size={24} />} label={t.ctr} value={calculateCTR(metrics?.clicks, metrics?.impressions)} color="text-indigo-600" bg="bg-indigo-50" />
-            </div>
+            <p className="text-sm text-slate-600 font-medium bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4">{t.publish_steps}</p>
+
+            {/* Metrics Grid — only if API allows (admin) */}
+            {metricsVisible ? (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                    <MetricCard icon={<TrendingUp size={24} />} label={t.spend} value={`${metrics?.spend || '0.00'}`} sub={status?.currency || 'EUR'} color="text-emerald-600" bg="bg-emerald-50" />
+                    <MetricCard icon={<Users size={24} />} label={t.impressions} value={`${metrics?.impressions || '0'}`} color="text-blue-600" bg="bg-blue-50" />
+                    <MetricCard icon={<MousePointer2 size={24} />} label={t.clicks} value={`${metrics?.clicks || '0'}`} color="text-purple-600" bg="bg-purple-50" />
+                    <MetricCard icon={<BarChart3 size={24} />} label={t.ctr} value={calculateCTR(metrics?.clicks, metrics?.impressions)} color="text-indigo-600" bg="bg-indigo-50" />
+                </div>
+            ) : (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 text-sm text-slate-600 font-medium">
+                    {t.metrics_locked}
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left: Account Status & Info */}
@@ -386,12 +412,3 @@ function SkeletonList() {
     );
 }
 
-function PlusCircle({ size, strokeWidth }: { size: number, strokeWidth: number }) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M8 12h8" />
-            <path d="M12 8v8" />
-        </svg>
-    )
-}
