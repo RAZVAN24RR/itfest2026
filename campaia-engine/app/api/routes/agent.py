@@ -1,8 +1,6 @@
 """
 Campaia Agent — AI Marketing Assistant powered by Google Gemini.
-
-Provides a chat endpoint that acts as a marketing specialist,
-helping users plan campaigns, optimize timing, and improve strategy.
+Deep integration with Campaia platform, campaign scheduler, and TikTok strategy.
 """
 
 import logging
@@ -11,46 +9,109 @@ from typing import Optional
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.database import get_db
 from app.models.user import User
+from app.models.campaign_schedule import CampaignSchedule
 from app.services.campaign_service import CampaignService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agent", tags=["Campaia Agent"])
 
-SYSTEM_PROMPT = """Ești Campaia Agent — un asistent AI expert în marketing digital și campanii comunitare.
+SYSTEM_PROMPT = """Ești **Campaia Agent** — asistentul AI de marketing integrat în platforma Campaia.
 
-Rolul tău:
-- Ajuți utilizatorii să creeze, planifice și optimizeze campanii pe TikTok pentru cauze sociale
-- Dai sfaturi despre timing-ul optim pentru lansarea campaniilor
-- Recomanzi strategii de conținut, hashtag-uri și audiențe target
-- Analizezi performanța campaniilor și sugerezi îmbunătățiri
-- Planifici calendarul de campanii (când să pornești/oprești)
-- Explici metrici: CPA, ROAS, reach, engagement
-- Ești prietenos, concis și orientat pe acțiune
+═══════════════════════════════════════
+CINE EȘTI
+═══════════════════════════════════════
+Ești un strateg de marketing digital specializat pe campanii comunitare TikTok. Funcționezi INSIDE platforma Campaia — cunoști fiecare buton, ecran și funcționalitate. Utilizatorul vorbește cu tine din dashboard-ul platformei.
 
-Context platformă:
-- Campaia este o platformă pentru campanii comunitare (donare sânge, reciclare, voluntariat, etc.)
-- Campaniile sunt publicate pe TikTok prin API
-- Utilizatorii au un sistem de tokens pentru generare conținut AI
-- Platformă dezvoltată în România, pentru comunități locale
+═══════════════════════════════════════
+PLATFORMA CAMPAIA — CE ȘTII
+═══════════════════════════════════════
+Campaia e o platformă AI care ajută ONG-uri, organizații și oameni normali să lanseze campanii sociale pe TikTok: donare de sânge, reciclare, voluntariat, evenimente comunitare.
 
-Reguli:
-- Răspunde în limba în care ți se scrie (română sau engleză)
-- Fii concis dar util (max 200 cuvinte per răspuns)
-- Când dai sfaturi de timing, folosește ore din fusul orar al României (EET/EEST)
-- Dacă nu știi ceva specific despre platforma utilizatorului, întreabă
-- Nu inventa statistici — dacă nu ai date concrete, spune clar
+**Pagini din dashboard (sidebar stânga):**
+- 📊 Privire Generală — toate campaniile, status, buget
+- 🗺️ Harta Comunitară — hartă cu campaniile active pe orașe din România
+- ➕ Campanie Nouă — wizard de creare: nume → URL → buget → durată → AI script → targeting → video → publicare TikTok
+- 📈 Analitice — grafice cu views, clicks, CPA, shares pe 7/30/90 zile
+- 🎬 Videoclipuri — galerie video, generare AI (Kling, Runway, Pika, Local AI ModelScope)
+- 🤖 Campaia Agent — EU, chat-ul ăsta
+- 💳 Facturare — istoric plăți, facturi PDF
+- 👤 Profil — date personale, tip cont (individual/business)
+- ⚙️ Setări — configurări cont
+
+**Sistem de tokens:**
+- Fiecare acțiune AI costă tokens (script: 5, video 5s: 50, video 10s: 80)
+- Pachete: Starter 100tk/29 RON, Standard 300tk/79 RON, Pro 700tk/149 RON, Business 1500tk/299 RON
+- Plata prin Stripe
+
+**Generare video AI:**
+- 4 stiluri: Kling v1.6 (cloud, rapid), Runway Gen-3 Alpha (cinematic), Pika 1.0 (social), Local AI ModelScope v1.7b (GPU local)
+- Fallback automat pe Kling dacă alt provider eșuează
+- Videoclipuri 9:16 (vertical TikTok)
+
+**Targeting TikTok:**
+- Țări: România (default), + DE, FR, IT, ES, GB, US, NL, PL, AT
+- Orașe: selecție multiplă doar pentru România (București, Cluj, Timișoara, Iași, Constanța, Brașov, Craiova, Galați, Oradea, Sibiu)
+- Grupe vârstă: 18-24, 25-34, 35-44, 45-54, 55+
+- Gen: Toți, Bărbați, Femei
+
+**Publicare TikTok (Sandbox):**
+- Campaign + Ad Group + Ad se creează automat prin TikTok Marketing API
+- Status: DRAFT → ACTIVE → PAUSED → COMPLETED
+- Metrici reale: impressions, clicks, spend, CTR, CPA
+
+**Scheduler campanii (NOU):**
+- Fiecare campanie poate avea un program automat
+- Zile: Luni-Vineri (default), sau personalizat
+- Interval orar: 09:00 - 21:00 (default, fus orar România)
+- Campania se activează/pauză automat conform programului
+- Se setează din pagina detalii campanie → secțiunea "Program Automat"
+
+═══════════════════════════════════════
+CUM RĂSPUNZI
+═══════════════════════════════════════
+
+1. **Limba**: Răspunzi în limba în care ți se scrie (română sau engleză)
+2. **Concis**: Max 150-200 cuvinte. Fii direct, orientat pe acțiune
+3. **Referințe UI**: Când dai instrucțiuni, menționează exact pagina/butonul din platformă
+   - Ex: "Du-te la **Campanie Nouă** din sidebar și setează bugetul pe 100 RON"
+   - Ex: "În **Analitice**, uită-te la graficul CPA pe 30 zile"
+4. **Sfaturi timing România**:
+   - TikTok RO: Ore optimale 18:00-22:00 (după muncă/școală)
+   - Weekend: 10:00-14:00 + 19:00-23:00
+   - Evită 02:00-07:00
+   - Luni dimineață = engagement scăzut
+   - Vineri seara + Sâmbătă = vârf
+5. **Scheduler**: Când vorbești despre programare, recomandă setări concrete:
+   - "Setează programul pe Luni-Vineri, 17:00-22:00 pentru audiență activă"
+   - "Pentru campanii de weekend, programează Sâmbătă-Duminică 10:00-23:00"
+6. **Budget**: Sfatuiește realistic (min 50 RON, optim 100-300 RON pentru reach decent)
+7. **Nu inventa statistici** — dacă nu ai date concrete, zi clar
+8. **Emoji moderat**: Folosește emoji relevant dar nu exagera
+
+═══════════════════════════════════════
+SCENARII TIPICE
+═══════════════════════════════════════
+
+Dacă utilizatorul întreabă:
+- "Când să lansez?" → Sfat de timing + recomandare scheduler
+- "Ce buget?" → Calcul ROI estimat cu tokens
+- "Ce targeting?" → Sfat audiență + orașe relevante
+- "Cum fac un video bun?" → Sfaturi prompt + stil recomandat
+- "Cum funcționează X?" → Explici funcționalitatea cu referință la pagina exactă din UI
+- "Planifică-mi campania" → Plan complet: obiectiv, buget, targeting, timing, conținut, scheduler
 """
 
 
 class ChatMessage(BaseModel):
-    role: str  # "user" or "assistant"
+    role: str
     content: str
 
 
@@ -75,24 +136,13 @@ async def agent_chat(
     if not api_key or not api_key.strip():
         raise HTTPException(503, "Gemini API key not configured")
 
-    # Build campaign context if user has campaigns
-    campaign_summary = ""
-    try:
-        service = CampaignService(db)
-        campaigns = await service.list_campaigns(current_user)
-        if campaigns:
-            lines = []
-            for c in campaigns[:10]:
-                lines.append(f"- {c.name} (status: {c.status}, budget: {c.budget} RON)")
-            campaign_summary = "\n\nCampaniile utilizatorului:\n" + "\n".join(lines)
-    except Exception:
-        pass
+    # Build rich campaign + schedule context
+    live_context = await _build_live_context(db, current_user)
 
-    system = SYSTEM_PROMPT + campaign_summary
+    system = SYSTEM_PROMPT + live_context
     if req.campaign_context:
-        system += f"\n\nContext adițional: {req.campaign_context}"
+        system += f"\n\nContext adițional de la utilizator: {req.campaign_context}"
 
-    # Build Gemini contents
     contents = []
     for msg in req.history[-20:]:
         contents.append({
@@ -128,13 +178,88 @@ async def agent_chat(
         logger.error("Gemini call failed: %s", e)
         raise HTTPException(502, f"Gemini API call failed: {e}")
 
-    # Generate quick suggestions based on the reply
-    suggestions = []
-    if "campani" in req.message.lower() or len(req.history) == 0:
-        suggestions = [
-            "Ce oră e ideală pentru lansare?",
-            "Cum optimizez bugetul?",
-            "Ce hashtag-uri recomandzi?",
+    suggestions = _generate_suggestions(req.message, len(req.history))
+    return ChatResponse(reply=reply_text, suggestions=suggestions)
+
+
+async def _build_live_context(db: AsyncSession, user: User) -> str:
+    """Build live context from user's campaigns and schedules."""
+    parts = []
+
+    try:
+        service = CampaignService(db)
+        campaigns = await service.list_campaigns(user)
+        if campaigns:
+            lines = ["\n\n═══ CAMPANIILE UTILIZATORULUI ═══"]
+            for c in campaigns[:15]:
+                status_emoji = {"DRAFT": "📝", "ACTIVE": "🟢", "PAUSED": "⏸️", "COMPLETED": "✅", "CANCELLED": "❌"}.get(c.status, "❓")
+                line = f"{status_emoji} {c.name or 'Fără nume'} — {c.status}, {c.budget} RON"
+                if c.city:
+                    line += f", {c.city}"
+
+                # Check schedule
+                sched_result = await db.execute(
+                    select(CampaignSchedule).where(CampaignSchedule.campaign_id == c.id)
+                )
+                sched = sched_result.scalar_one_or_none()
+                if sched and sched.is_enabled:
+                    day_names = ["Lu", "Ma", "Mi", "Jo", "Vi", "Sâ", "Du"]
+                    days = ", ".join(day_names[d] for d in sched.days_of_week)
+                    line += f" | Program: {days} {sched.start_time}-{sched.end_time}"
+                elif sched and not sched.is_enabled:
+                    line += " | Program: dezactivat"
+
+                lines.append(line)
+            parts.append("\n".join(lines))
+        else:
+            parts.append("\n\nUtilizatorul nu are campanii create încă.")
+    except Exception:
+        pass
+
+    return "".join(parts)
+
+
+def _generate_suggestions(message: str, history_len: int) -> list[str]:
+    """Context-aware quick suggestions."""
+    msg_lower = message.lower()
+
+    if history_len == 0:
+        return [
+            "Planifică-mi o campanie de la zero",
+            "Ce ore sunt cele mai bune pe TikTok?",
+            "Cum setez programul automat?",
         ]
 
-    return ChatResponse(reply=reply_text, suggestions=suggestions)
+    if any(w in msg_lower for w in ["program", "schedul", "orar", "timp", "când"]):
+        return [
+            "Setează Luni-Vineri 17:00-22:00",
+            "Recomandă program de weekend",
+            "Care sunt orele de vârf?",
+        ]
+
+    if any(w in msg_lower for w in ["buget", "cost", "preț", "roi", "token"]):
+        return [
+            "Ce pachet de tokens recomandzi?",
+            "Cum calculez ROI-ul?",
+            "Buget optim pentru 10.000 views?",
+        ]
+
+    if any(w in msg_lower for w in ["video", "conținut", "clip", "prompt"]):
+        return [
+            "Ce stil video recomandzi?",
+            "Scrie-mi un prompt bun",
+            "Kling sau Local AI?",
+        ]
+
+    if any(w in msg_lower for w in ["target", "audiență", "public", "vârstă"]):
+        return [
+            "Ce orașe targetez pentru donare sânge?",
+            "Audiență optimă pentru reciclare",
+            "18-24 sau 25-34?",
+        ]
+
+    return [
+        "Ce pot îmbunătăți?",
+        "Analizează campaniile mele",
+        "Sugerează următorul pas",
+    ]

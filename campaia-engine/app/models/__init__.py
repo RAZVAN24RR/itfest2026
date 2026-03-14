@@ -14,6 +14,7 @@ from app.models.token_transaction import TokenTransaction, TransactionType, Acti
 from app.models.video_generation import VideoGeneration, VideoStatus, VideoQuality, VideoDuration
 from app.models.audience_target import AudienceTarget
 from app.models.invoice import Invoice, InvoiceType, InvoiceStatus
+from app.models.campaign_schedule import CampaignSchedule
 
 __all__ = [
     "BaseModel",
@@ -34,4 +35,5 @@ __all__ = [
     "Invoice",
     "InvoiceType",
     "InvoiceStatus",
+    "CampaignSchedule",
 ]

@@ -26,8 +26,13 @@ import {
     Music,
     X,
     Video,
-    MapPin
+    MapPin,
+    Clock,
+    Calendar,
+    ToggleLeft,
+    ToggleRight
 } from 'lucide-react';
+import { getSchedule, saveSchedule, deleteSchedule, DAY_LABELS_RO, DAY_LABELS_EN, TIME_SLOTS, type CampaignSchedule as ScheduleType, type ScheduleRequest } from '../../services/schedulerService';
 import campaignService, { type Campaign, CampaignStatus } from '../../services/campaignService';
 import targetingService, { type AudienceTarget } from '../../services/targetingService';
 import videoService, { type VideoListItem } from '../../services/videoService';
@@ -59,6 +64,15 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
     const [isPublishing, setIsPublishing] = useState(false);
     const [isVideoPlaying, setIsVideoPlaying] = useState(true);
     const videoRef = useRef<HTMLVideoElement>(null);
+
+    // Scheduler state
+    const [schedule, setSchedule] = useState<ScheduleType | null>(null);
+    const [schedEnabled, setSchedEnabled] = useState(false);
+    const [schedDays, setSchedDays] = useState<number[]>([0, 1, 2, 3, 4]);
+    const [schedStart, setSchedStart] = useState('09:00');
+    const [schedEnd, setSchedEnd] = useState('21:00');
+    const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+    const [scheduleSuccess, setScheduleSuccess] = useState(false);
 
     const t = {
         ro: {
@@ -177,6 +191,20 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                 }
             } catch (err) {
                 console.error("Failed to fetch targeting", err);
+            }
+
+            // Fetch Schedule
+            try {
+                const sched = await getSchedule(campaignId);
+                setSchedule(sched);
+                if (sched) {
+                    setSchedEnabled(sched.is_enabled);
+                    setSchedDays(sched.days_of_week);
+                    setSchedStart(sched.start_time);
+                    setSchedEnd(sched.end_time);
+                }
+            } catch (err) {
+                console.error("Failed to fetch schedule", err);
             }
 
             // Fetch Video Creator
@@ -525,6 +553,53 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                         </div>
                     )}
 
+                    {/* Campaign Scheduler Section */}
+                    <CampaignSchedulerUI
+                        lang={lang}
+                        enabled={schedEnabled}
+                        days={schedDays}
+                        startTime={schedStart}
+                        endTime={schedEnd}
+                        isSaving={isSavingSchedule}
+                        showSuccess={scheduleSuccess}
+                        hasSchedule={!!schedule}
+                        onToggleEnabled={(v) => setSchedEnabled(v)}
+                        onToggleDay={(d) => setSchedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d].sort())}
+                        onStartChange={setSchedStart}
+                        onEndChange={setSchedEnd}
+                        onSave={async () => {
+                            setIsSavingSchedule(true);
+                            try {
+                                const req: ScheduleRequest = {
+                                    is_enabled: schedEnabled,
+                                    days_of_week: schedDays,
+                                    start_time: schedStart,
+                                    end_time: schedEnd,
+                                };
+                                const saved = await saveSchedule(campaignId, req);
+                                setSchedule(saved);
+                                setScheduleSuccess(true);
+                                setTimeout(() => setScheduleSuccess(false), 3000);
+                            } catch (err) {
+                                console.error("Failed to save schedule", err);
+                            } finally {
+                                setIsSavingSchedule(false);
+                            }
+                        }}
+                        onDelete={async () => {
+                            try {
+                                await deleteSchedule(campaignId);
+                                setSchedule(null);
+                                setSchedEnabled(false);
+                                setSchedDays([0, 1, 2, 3, 4]);
+                                setSchedStart('09:00');
+                                setSchedEnd('21:00');
+                            } catch (err) {
+                                console.error("Failed to delete schedule", err);
+                            }
+                        }}
+                    />
+
                     {/* Script Section */}
                     <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm space-y-4">
                         <div className="flex items-center gap-2 text-slate-800">
@@ -799,6 +874,209 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+interface SchedulerUIProps {
+    lang: string;
+    enabled: boolean;
+    days: number[];
+    startTime: string;
+    endTime: string;
+    isSaving: boolean;
+    showSuccess: boolean;
+    hasSchedule: boolean;
+    onToggleEnabled: (v: boolean) => void;
+    onToggleDay: (d: number) => void;
+    onStartChange: (v: string) => void;
+    onEndChange: (v: string) => void;
+    onSave: () => void;
+    onDelete: () => void;
+}
+
+function CampaignSchedulerUI({
+    lang, enabled, days, startTime, endTime, isSaving, showSuccess, hasSchedule,
+    onToggleEnabled, onToggleDay, onStartChange, onEndChange, onSave, onDelete
+}: SchedulerUIProps) {
+    const isRo = lang === 'ro';
+    const dayLabels = isRo ? DAY_LABELS_RO : DAY_LABELS_EN;
+
+    return (
+        <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50 space-y-6">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                        <Calendar size={20} className="text-white" />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-slate-900">
+                            {isRo ? 'Program Automat' : 'Auto Schedule'}
+                        </h3>
+                        <p className="text-xs text-slate-400 font-medium">
+                            {isRo ? 'Campania se activează/pauză automat' : 'Campaign auto-activates/pauses'}
+                        </p>
+                    </div>
+                </div>
+                <button
+                    onClick={() => onToggleEnabled(!enabled)}
+                    className="transition-all active:scale-95"
+                >
+                    {enabled ? (
+                        <ToggleRight size={36} className="text-green-500" />
+                    ) : (
+                        <ToggleLeft size={36} className="text-slate-300" />
+                    )}
+                </button>
+            </div>
+
+            {showSuccess && (
+                <div className="bg-green-50 border border-green-200 text-green-600 p-3 rounded-xl flex items-center gap-2 text-sm font-medium animate-in fade-in zoom-in duration-300">
+                    <CheckCircle2 size={16} />
+                    {isRo ? 'Program salvat!' : 'Schedule saved!'}
+                </div>
+            )}
+
+            <div className={`space-y-6 transition-all duration-300 ${enabled ? 'opacity-100' : 'opacity-40 pointer-events-none'}`}>
+                {/* Days of week selector */}
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                        <Calendar size={14} className="text-slate-500" />
+                        <span className="text-sm font-bold text-slate-600">
+                            {isRo ? 'Zile active' : 'Active days'}
+                        </span>
+                    </div>
+                    <div className="flex gap-2">
+                        {dayLabels.map((label, i) => {
+                            const active = days.includes(i);
+                            const isWeekend = i >= 5;
+                            return (
+                                <button
+                                    key={i}
+                                    onClick={() => onToggleDay(i)}
+                                    className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95 border-2 ${
+                                        active
+                                            ? isWeekend
+                                                ? 'bg-orange-50 border-orange-300 text-orange-700 shadow-sm'
+                                                : 'bg-purple-50 border-purple-300 text-purple-700 shadow-sm'
+                                            : 'bg-slate-50 border-slate-100 text-slate-300 hover:border-slate-200'
+                                    }`}
+                                >
+                                    {label}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => { for (let d = 0; d < 5; d++) if (!days.includes(d)) onToggleDay(d); for (let d = 5; d < 7; d++) if (days.includes(d)) onToggleDay(d); }}
+                            className="text-[10px] font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-lg border border-purple-100 hover:bg-purple-100 transition-colors"
+                        >
+                            {isRo ? 'Lu-Vi' : 'Mon-Fri'}
+                        </button>
+                        <button
+                            onClick={() => { for (let d = 0; d < 7; d++) if (!days.includes(d)) onToggleDay(d); }}
+                            className="text-[10px] font-bold text-slate-600 bg-slate-50 px-3 py-1 rounded-lg border border-slate-100 hover:bg-slate-100 transition-colors"
+                        >
+                            {isRo ? 'Toate' : 'All'}
+                        </button>
+                        <button
+                            onClick={() => { for (let d = 5; d < 7; d++) if (!days.includes(d)) onToggleDay(d); for (let d = 0; d < 5; d++) if (days.includes(d)) onToggleDay(d); }}
+                            className="text-[10px] font-bold text-orange-600 bg-orange-50 px-3 py-1 rounded-lg border border-orange-100 hover:bg-orange-100 transition-colors"
+                        >
+                            {isRo ? 'Weekend' : 'Weekend'}
+                        </button>
+                    </div>
+                </div>
+
+                {/* Time window */}
+                <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                        <Clock size={14} className="text-slate-500" />
+                        <span className="text-sm font-bold text-slate-600">
+                            {isRo ? 'Interval orar (Romania)' : 'Time window (Romania)'}
+                        </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                                {isRo ? 'Pornire' : 'Start'}
+                            </label>
+                            <select
+                                value={startTime}
+                                onChange={e => onStartChange(e.target.value)}
+                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:border-purple-300 focus:ring-0 outline-none transition-colors appearance-none cursor-pointer"
+                            >
+                                {TIME_SLOTS.map(t => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">
+                                {isRo ? 'Oprire' : 'End'}
+                            </label>
+                            <select
+                                value={endTime}
+                                onChange={e => onEndChange(e.target.value)}
+                                className="w-full bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:border-purple-300 focus:ring-0 outline-none transition-colors appearance-none cursor-pointer"
+                            >
+                                {TIME_SLOTS.map(t => (
+                                    <option key={t} value={t}>{t}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Visual timeline bar */}
+                    <div className="relative h-8 bg-slate-100 rounded-lg overflow-hidden">
+                        {(() => {
+                            const startH = parseInt(startTime.split(':')[0]);
+                            const endH = parseInt(endTime.split(':')[0]);
+                            const left = (startH / 24) * 100;
+                            const width = ((endH - startH) / 24) * 100;
+                            return (
+                                <>
+                                    <div
+                                        className="absolute top-0 bottom-0 bg-gradient-to-r from-purple-400 to-indigo-400 rounded"
+                                        style={{ left: `${left}%`, width: `${Math.max(width, 2)}%` }}
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white mix-blend-difference tracking-wider">
+                                        {startTime} — {endTime}
+                                    </div>
+                                </>
+                            );
+                        })()}
+                        {/* Hour markers */}
+                        <div className="absolute bottom-0 left-0 right-0 flex justify-between px-0.5">
+                            {[0, 6, 12, 18, 24].map(h => (
+                                <span key={h} className="text-[7px] text-slate-400 font-mono">{h.toString().padStart(2, '0')}</span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-3 pt-2">
+                    <button
+                        onClick={onSave}
+                        disabled={isSaving || days.length === 0}
+                        className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-amber-500/20 hover:scale-[1.02] transition-all disabled:opacity-50 active:scale-95"
+                    >
+                        {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                        {isRo ? 'Salvează Program' : 'Save Schedule'}
+                    </button>
+                    {hasSchedule && (
+                        <button
+                            onClick={onDelete}
+                            className="p-3 rounded-xl border border-red-100 text-red-500 hover:bg-red-50 transition-all bg-white active:scale-95"
+                            title={isRo ? 'Șterge programul' : 'Delete schedule'}
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
