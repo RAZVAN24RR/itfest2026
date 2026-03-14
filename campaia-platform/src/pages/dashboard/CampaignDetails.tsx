@@ -33,6 +33,7 @@ import {
     ToggleRight
 } from 'lucide-react';
 import { getSchedule, saveSchedule, deleteSchedule, DAY_LABELS_RO, DAY_LABELS_EN, TIME_SLOTS, type CampaignSchedule as ScheduleType, type ScheduleRequest } from '../../services/schedulerService';
+import { COMMUNITY_EVENT_TYPES } from './NewCampaign';
 import campaignService, { type Campaign, CampaignStatus } from '../../services/campaignService';
 import targetingService, { type AudienceTarget } from '../../services/targetingService';
 import videoService, { type VideoListItem } from '../../services/videoService';
@@ -334,7 +335,18 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                             <Smartphone size={16} className="text-purple-600" />
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Campaign Hub</span>
                         </div>
-                        <h1 className="text-4xl font-black text-slate-900 tracking-tight">{name}</h1>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-4xl font-black text-slate-900 tracking-tight">{name}</h1>
+                            {campaign.event_type && (() => {
+                                const evt = COMMUNITY_EVENT_TYPES.find(e => e.id === campaign.event_type);
+                                return evt ? (
+                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border ${evt.color}`}>
+                                        <span>{evt.icon}</span>
+                                        <span>{lang === 'ro' ? evt.labelRo : evt.labelEn}</span>
+                                    </span>
+                                ) : null;
+                            })()}
+                        </div>
                         <p className="text-slate-500 font-medium flex items-center gap-2 mt-2 bg-slate-50 px-3 py-1 rounded-full border border-slate-100 self-start text-sm">
                             <LinkIcon size={14} className="text-purple-500" />
                             {campaign.url}

@@ -14,4 +14,6 @@ export interface CampaignData {
     city?: string;
     lat?: number;
     lng?: number;
+    eventType?: string;
+    cities?: string[];
 }

@@ -62,6 +62,23 @@ Campaia e o platformă AI care ajută ONG-uri, organizații și oameni normali s
 - Grupe vârstă: 18-24, 25-34, 35-44, 45-54, 55+
 - Gen: Toți, Bărbați, Femei
 
+**Tipuri de evenimente comunitare (NOU — selectabile la creare campanie):**
+- 🩸 Donare de Sânge — campanii pentru mobilizarea donatorilor
+- 💻 Hackathon — promovare hackathoane, code jams, competiții tech
+- 🤝 Voluntariat — recrutare voluntari pentru diverse cauze
+- ♻️ Reciclare / Ecologie — acțiuni de curățenie, plantare, mediu
+- 🏘️ Adunare Comunitară — ședințe locale, consultări publice
+- 💛 Strângere de Fonduri — charity, crowdfunding pentru cauze
+- 📚 Educație / Workshop — cursuri gratuite, traininguri, mentorare
+- 🏥 Sănătate / Prevenție — screening-uri, campanii de vaccinare
+- 🏃 Sport Comunitar — maratoane caritabile, turnee locale
+- 🎭 Cultură / Festival — festivaluri, expoziții, spectacole
+- 🐾 Protecția Animalelor — adopție, strângeri pentru adăposturi
+- 🆘 Ajutor în Dezastre — ajutor post-inundații, cutremure, urgențe
+- 🏅 Maraton / Cursă Caritabilă — maratoane, curse caritabile, alergări pentru cauze
+
+Când recomanzi o campanie, sugerează tipul de eveniment potrivit din lista de mai sus.
+
 **Publicare TikTok (Sandbox):**
 - Campaign + Ad Group + Ad se creează automat prin TikTok Marketing API
 - Status: DRAFT → ACTIVE → PAUSED → COMPLETED
@@ -194,6 +211,8 @@ async def _build_live_context(db: AsyncSession, user: User) -> str:
             for c in campaigns[:15]:
                 status_emoji = {"DRAFT": "📝", "ACTIVE": "🟢", "PAUSED": "⏸️", "COMPLETED": "✅", "CANCELLED": "❌"}.get(c.status, "❓")
                 line = f"{status_emoji} {c.name or 'Fără nume'} — {c.status}, {c.budget} RON"
+                if c.event_type:
+                    line += f" [{c.event_type}]"
                 if c.city:
                     line += f", {c.city}"
 

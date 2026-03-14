@@ -22,6 +22,22 @@ const TONES: { id: ToneType; labelRo: string; labelEn: string; icon: string }[] 
     { id: 'funny', labelRo: 'Amuzant', labelEn: 'Funny', icon: '😂' },
 ];
 
+export const COMMUNITY_EVENT_TYPES = [
+    { id: 'blood_donation', icon: '🩸', labelRo: 'Donare de Sânge', labelEn: 'Blood Donation', color: 'bg-red-50 border-red-200 text-red-700' },
+    { id: 'hackathon', icon: '💻', labelRo: 'Hackathon', labelEn: 'Hackathon', color: 'bg-blue-50 border-blue-200 text-blue-700' },
+    { id: 'volunteering', icon: '🤝', labelRo: 'Voluntariat', labelEn: 'Volunteering', color: 'bg-green-50 border-green-200 text-green-700' },
+    { id: 'recycling', icon: '♻️', labelRo: 'Reciclare / Ecologie', labelEn: 'Recycling / Ecology', color: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+    { id: 'community_gathering', icon: '🏘️', labelRo: 'Adunare Comunitară', labelEn: 'Community Gathering', color: 'bg-amber-50 border-amber-200 text-amber-700' },
+    { id: 'charity', icon: '💛', labelRo: 'Strângere de Fonduri', labelEn: 'Charity / Fundraising', color: 'bg-yellow-50 border-yellow-200 text-yellow-700' },
+    { id: 'education', icon: '📚', labelRo: 'Educație / Workshop', labelEn: 'Education / Workshop', color: 'bg-indigo-50 border-indigo-200 text-indigo-700' },
+    { id: 'health', icon: '🏥', labelRo: 'Sănătate / Prevenție', labelEn: 'Health / Prevention', color: 'bg-pink-50 border-pink-200 text-pink-700' },
+    { id: 'sports', icon: '🏃', labelRo: 'Sport Comunitar', labelEn: 'Community Sports', color: 'bg-orange-50 border-orange-200 text-orange-700' },
+    { id: 'culture', icon: '🎭', labelRo: 'Cultură / Festival', labelEn: 'Culture / Festival', color: 'bg-purple-50 border-purple-200 text-purple-700' },
+    { id: 'animal_rescue', icon: '🐾', labelRo: 'Protecția Animalelor', labelEn: 'Animal Rescue', color: 'bg-teal-50 border-teal-200 text-teal-700' },
+    { id: 'disaster_relief', icon: '🆘', labelRo: 'Ajutor în Dezastre', labelEn: 'Disaster Relief', color: 'bg-rose-50 border-rose-200 text-rose-700' },
+    { id: 'marathon', icon: '🏅', labelRo: 'Maraton / Cursă Caritabilă', labelEn: 'Marathon / Charity Run', color: 'bg-sky-50 border-sky-200 text-sky-700' },
+];
+
 export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignProps) {
     const [currentStep, setCurrentStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
@@ -45,7 +61,8 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
         budget: 50,
         productDesc: '',
         aiScript: '',
-        videoId: ''
+        videoId: '',
+        eventType: ''
     });
 
     // Simple TikTok-compatible targeting
@@ -68,11 +85,12 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
             await onPublish({
                 ...formData,
                 aiScript: scriptVariants[selectedVariantIndex] || formData.aiScript,
-                targeting: toTikTokTargeting(targetingData),  // Convert to TikTok format
+                targeting: toTikTokTargeting(targetingData),
                 city: targetingData.cities?.join(', ') || targetingData.city,
                 cities: targetingData.cities,
                 lat: targetingData.lat,
-                lng: targetingData.lng
+                lng: targetingData.lng,
+                eventType: formData.eventType
             });
             setShowSuccess(true);
         } catch (error) {
@@ -366,6 +384,35 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     />
+                                </div>
+
+                                {/* Community Event Type */}
+                                <div className="space-y-4">
+                                    <label className="flex items-center gap-2 text-xs font-black text-slate-400 uppercase tracking-[0.2em]">
+                                        {lang === 'ro' ? 'Tip Eveniment Comunitar' : 'Community Event Type'}
+                                    </label>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                                        {COMMUNITY_EVENT_TYPES.map(evt => (
+                                            <button
+                                                key={evt.id}
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, eventType: formData.eventType === evt.id ? '' : evt.id })}
+                                                className={`relative flex items-center gap-2.5 px-3.5 py-3 rounded-xl border-2 transition-all duration-200 text-left active:scale-[0.97] ${
+                                                    formData.eventType === evt.id
+                                                        ? `${evt.color} shadow-md border-current`
+                                                        : 'bg-slate-50/50 border-slate-100 hover:border-slate-200 text-slate-600 hover:bg-white'
+                                                }`}
+                                            >
+                                                <span className="text-lg shrink-0">{evt.icon}</span>
+                                                <span className="text-[11px] font-bold leading-tight">{lang === 'ro' ? evt.labelRo : evt.labelEn}</span>
+                                                {formData.eventType === evt.id && (
+                                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-current rounded-full flex items-center justify-center">
+                                                        <CheckCircle2 size={10} className="text-white" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 <div className="space-y-4">

@@ -79,6 +79,7 @@ export default function Dashboard() {
                 product_desc?: string;
                 name: string;
                 video_id?: string;
+                event_type?: string;
             } = {
                 url: data.url,
                 budget: data.budget,
@@ -86,9 +87,11 @@ export default function Dashboard() {
                 name: data.name || 'New Campaign'
             };
 
-            // Add video_id if a video was selected/generated
             if (data.videoId) {
                 createPayload.video_id = data.videoId;
+            }
+            if (data.eventType) {
+                createPayload.event_type = data.eventType;
             }
 
             const campaign = await campaignService.createCampaign(createPayload);

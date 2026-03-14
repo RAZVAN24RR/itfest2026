@@ -25,6 +25,7 @@ export interface Campaign {
     tiktok_campaign_id: string | null;
     video_url: string | null;
     video_id: string | null;
+    event_type: string | null;
     lat: number | null;
     lng: number | null;
     city: string | null;
@@ -37,6 +38,7 @@ export interface CreateCampaignData {
     budget?: number;
     product_desc?: string;
     name?: string;
+    event_type?: string;
     lat?: number;
     lng?: number;
     city?: string;

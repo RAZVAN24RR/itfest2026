@@ -20,6 +20,7 @@ class CampaignBase(BaseModel):
     budget: Decimal = Field(default=Decimal("50.00"), ge=10, le=10000)
     duration: int = Field(default=7, ge=1, le=365)
     product_desc: str | None = Field(None, max_length=5000)
+    event_type: str | None = Field(None, max_length=50)
     lat: float | None = None
     lng: float | None = None
     city: str | None = Field(None, max_length=100)
@@ -42,6 +43,7 @@ class CampaignUpdate(BaseModel):
     product_desc: str | None = Field(None, max_length=5000)
     ai_script: str | None = Field(None, max_length=10000)
     status: CampaignStatus | None = None
+    event_type: str | None = Field(None, max_length=50)
     video_id: UUID | None = None
     video_url: str | None = None
     lat: float | None = None
@@ -67,6 +69,7 @@ class CampaignResponse(BaseModel):
     tiktok_campaign_id: str | None = None
     video_url: str | None = None
     video_id: UUID | None = None
+    event_type: str | None = None
     lat: float | None = None
     lng: float | None = None
     city: str | None = None
@@ -108,6 +111,7 @@ class CampaignMapMarker(BaseModel):
     lng: float
     city: str | None = None
     category: str
+    event_type: str | None = None
     estimated_reach: int
     video_url: str | None = None
 

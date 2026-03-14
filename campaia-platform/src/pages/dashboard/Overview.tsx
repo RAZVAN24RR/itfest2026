@@ -2,6 +2,7 @@ import { PlusCircle, Smartphone, Trash2, ArrowRight, Pause, Play, Loader2, Link 
 import { nanoid } from 'nanoid';
 import { useState } from 'react';
 import type OverviewProps from "../../interfaces/overviewProps.ts";
+import { COMMUNITY_EVENT_TYPES } from './NewCampaign';
 
 export default function Overview({ campaigns, onCreateNew, lang, onDelete, onToggle, onView }: OverviewProps) {
     const texts = {
@@ -139,9 +140,20 @@ export default function Overview({ campaigns, onCreateNew, lang, onDelete, onTog
                                             </div>
                                         </div>
                                         <div className="min-w-0">
-                                            <h3 className="text-slate-900 font-bold text-lg truncate group-hover:text-purple-600 transition-colors">
-                                                {campaign.name || 'Untitled Campaign'}
-                                            </h3>
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="text-slate-900 font-bold text-lg truncate group-hover:text-purple-600 transition-colors">
+                                                    {campaign.name || 'Untitled Campaign'}
+                                                </h3>
+                                                {campaign.event_type && (() => {
+                                                    const evt = COMMUNITY_EVENT_TYPES.find(e => e.id === campaign.event_type);
+                                                    return evt ? (
+                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-bold border ${evt.color} shrink-0`}>
+                                                            <span>{evt.icon}</span>
+                                                            <span className="hidden sm:inline">{lang === 'ro' ? evt.labelRo : evt.labelEn}</span>
+                                                        </span>
+                                                    ) : null;
+                                                })()}
+                                            </div>
                                             <p className="text-slate-400 text-[10px] font-bold truncate flex items-center gap-1.5 mt-1.5">
                                                 <Link size={10} className="text-purple-400" />
                                                 <span className="text-slate-300 uppercase tracking-tighter mr-1">{lang === 'ro' ? 'Destinație:' : 'Destination:'}</span>

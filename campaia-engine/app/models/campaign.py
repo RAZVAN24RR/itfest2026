@@ -77,6 +77,9 @@ class Campaign(BaseModel):
     # Video URL (from Kling AI generation, used for TikTok publishing)
     video_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
 
+    # Community event type
+    event_type: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
     # Coordinates for Community Map
     lat: Mapped[float | None] = mapped_column(Numeric(10, 6), nullable=True)
     lng: Mapped[float | None] = mapped_column(Numeric(10, 6), nullable=True)
