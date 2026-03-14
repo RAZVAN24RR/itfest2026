@@ -24,9 +24,9 @@ export default function LandingPage() {
     const content = {
         ro: {
             badge: "Public Beta Active",
-            title1: "TikTok Ads,",
-            title2: "Simplificat.",
-            desc: "Nu mai pierde ore scriind scripturi. Platforma noastră generează, optimizează și pregătește campaniile tale pentru viralitate.",
+            title1: "Social Ads,",
+            title2: "Simplificate.",
+            desc: "Nu mai pierde ore scriind scripturi. Platforma noastră generează, optimizează și pregătește campaniile tale pentru viralitate — pe TikTok, Meta și Google Ads.",
             ctaPrimary: "Începe Acum",
             ctaSecondary: "Despre Concept",
             workflowTitle: "Flux de Lucru",
@@ -45,9 +45,9 @@ export default function LandingPage() {
         },
         en: {
             badge: "Public Beta Live",
-            title1: "TikTok Ads,",
+            title1: "Social Ads,",
             title2: "Simplified.",
-            desc: "Stop wasting hours writing scripts. Our platform generates, optimizes, and preps your campaigns for virality.",
+            desc: "Stop wasting hours writing scripts. Our platform generates, optimizes, and preps your campaigns for virality — on TikTok, Meta, and Google Ads.",
             ctaPrimary: "Get Started",
             ctaSecondary: "About Concept",
             workflowTitle: "Workflow",
@@ -244,6 +244,40 @@ export default function LandingPage() {
                                 </p>
                             </div>
                         ))}
+                    </div>
+                </div>
+
+                {/* Supported Platforms */}
+                <div className="mt-20 text-center">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-8">Platforme Suportate</p>
+                    <div className="flex flex-wrap items-center justify-center gap-6">
+                        {/* TikTok - Active */}
+                        <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-2xl px-6 py-4 shadow-lg shadow-slate-200/40 hover:shadow-xl transition-all">
+                            <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white text-lg">🎵</div>
+                            <div className="text-left">
+                                <p className="text-sm font-black text-slate-900">TikTok Ads</p>
+                                <span className="text-[9px] font-black text-green-600 uppercase tracking-widest flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+                                    Live
+                                </span>
+                            </div>
+                        </div>
+                        {/* Meta Ads - Coming Soon */}
+                        <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-2xl px-6 py-4 shadow-lg shadow-slate-200/40 opacity-60 hover:opacity-80 transition-all">
+                            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white text-lg">📘</div>
+                            <div className="text-left">
+                                <p className="text-sm font-black text-slate-900">Meta Ads</p>
+                                <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Coming Soon</span>
+                            </div>
+                        </div>
+                        {/* Google Ads - Coming Soon */}
+                        <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-2xl px-6 py-4 shadow-lg shadow-slate-200/40 opacity-60 hover:opacity-80 transition-all">
+                            <div className="w-10 h-10 bg-gradient-to-br from-red-500 via-yellow-400 to-green-500 rounded-xl flex items-center justify-center text-white text-lg">🔍</div>
+                            <div className="text-left">
+                                <p className="text-sm font-black text-slate-900">Google Ads</p>
+                                <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">Coming Soon</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

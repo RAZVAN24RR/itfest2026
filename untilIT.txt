@@ -1,0 +1,242 @@
+====================================================================
+CAMPAIA — AI pentru Mobilizarea Comunităților (ITFest 2026)
+Ce s-a implementat până acum — Rezumat complet
+====================================================================
+
+## DESCRIERE GENERALĂ
+
+Campaia este o platformă bazată pe Inteligență Artificială care ajută ONG-uri, inițiative comunitare și proiecte locale (donare de sânge, reciclare, voluntariat etc.) să creeze campanii digitale eficiente pentru social media, în doar câteva minute.
+
+Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă, locație), iar platforma generează automat:
+- Scripturi video pentru TikTok / social media
+- Imagini promoționale
+- Videoclipuri gata de publicat
+- Hashtag-uri și strategii de distribuție
+- Recomandări pentru audiența țintă
+
+## TECH STACK IMPLEMENTAT
+
+### Backend (campaia-engine)
+- Framework: FastAPI (Python 3.12)
+- Bază de date: PostgreSQL 16 (async cu asyncpg)
+- ORM: SQLAlchemy 2.0 (async)
+- Migrații: Alembic
+- Cache: Redis 7
+- Autentificare: JWT (python-jose) + Google OAuth
+- Package manager: Poetry
+
+### Frontend (campaia-platform)
+- Framework: React 19 cu TypeScript
+- Build tool: Vite
+- Styling: Tailwind CSS 4
+- Auth: @react-oauth/google
+- Mobile: Capacitor (suport pentru Android)
+
+### AI & Integrări externe
+- Ollama — LLM local pentru generare de text (scripturi, descrieri, hashtag-uri)
+- Kling AI — API extern pentru generare video (text-to-video, image-to-video)
+- AWS S3 — Stocare obiecte (LocalStack pentru dev)
+- Stripe — Procesare plăți (sistem de tokeni)
+- TikTok Ads API — Publicare campanii pe TikTok
+
+### Infrastructură
+- Docker Compose — Orchestrare locală (PostgreSQL, Redis, Backend, Frontend, LocalStack)
+- Health checks configurate pe toate serviciile
+
+====================================================================
+## FUNCȚIONALITĂȚI IMPLEMENTATE (DETALIAT)
+====================================================================
+
+### 1. AUTENTIFICARE & MANAGEMENT UTILIZATORI
+- Login cu email + parolă (cu hash bcrypt)
+- Login cu Google OAuth (înregistrare/autentificare automată)
+- JWT tokens pentru sesiuni persistente (utilizatorul rămâne logat și după refresh)
+- Redirect automat la dashboard după login
+- Route-uri API protejate cu JWT
+- Pagini: Signin, Signup, Landing Page
+- Tipuri de utilizator: INDIVIDUAL și BUSINESS
+- Profil complet cu câmpuri business: CUI, Reg. Com., adresă, oraș, județ, țară
+- Flag de "profile completed"
+
+### 2. SISTEM DE CAMPANII
+- CRUD complet pentru campanii (creare, citire, actualizare, ștergere)
+- Status tracking: DRAFT → ACTIVE → PAUSED → COMPLETED / CANCELLED
+- Tranziții de stare validate (activate, pause, resume)
+- Câmpuri: nume campanie, URL destinație, buget, durată, descriere produs
+- Script AI atașat campaniei
+- Tracking tokeni consumați per campanie
+- Paginare pe lista de campanii
+- Filtrare după status
+- Pagini dashboard: Overview, Campaign Details, New Campaign, History
+
+### 3. GENERARE CONȚINUT AI (via Ollama)
+- Generare scripturi video (pentru TikTok) — multiple variante (5 by default)
+- Suport pentru tonuri: profesional, casual, viral, funny
+- Generare în limba utilizatorului (detecție automată RO/EN)
+- Generare hashtag-uri relevante
+- Sugestii de audiență țintă (demographic recommendations)
+- Generare descrieri marketing "punchline"
+- Generare prompt-uri cinematice pentru Kling AI
+- Verificare disponibilitate Ollama
+
+### 4. GENERARE VIDEO AI (via Kling AI)
+- Generare video din text (text-to-video)
+- Generare video din imagine (image-to-video)
+- Workflow async complet: creare job → apel Kling API → polling → download → upload S3 → update DB
+- Calități video: STANDARD, PROFESSIONAL
+- Durată video: SHORT (5s), MEDIUM (10s)
+- Aspect ratio configurabil
+- Upload manual de video-uri (din galerie/cameră)
+- Ștergere video (din DB + S3)
+- Editare titlu video
+- My Videos — galerie personală cu toate videourile utilizatorului
+- Community Feed — feed public cu videourile tuturor utilizatorilor
+- VideoGenerator component — interfață de generare
+- VideoPreview modal — preview video cu detalii
+- VideoThumbnail component — thumbnail vizual
+- VideoUpload component — upload de video
+
+### 5. SISTEM DE TOKENI & PLĂȚI (Stripe)
+- Wallet per utilizator (balanță + lifetime purchased)
+- Tranzacții: PURCHASE, SPEND, REFUND
+- Acțiuni token: PURCHASE, BONUS, SCRIPT, IMAGE, VIDEO
+- Pachete de tokeni (Stripe checkout):
+  • Starter Pack: 100 tokeni — 29 RON
+  • Standard Pack: 300 tokeni — 79 RON
+  • Pro Pack: 700 tokeni — 149 RON
+  • Business Pack: 1500 tokeni — 299 RON
+- Checkout Stripe cu redirect (success/cancel)
+- Webhook Stripe pentru confirmare plată
+- Mock mode când Stripe key lipsește
+- Pagini: BuyTokens, PaymentSuccess, PaymentCancel
+- TokenBalance component — afișare balanță
+- Billing page — detalii billing
+
+### 6. FACTURARE
+- Generare automată facturi după plata Stripe
+- Număr factură unic: CMP-YYYY-XXXX
+- PDF generat server-side (PDFService)
+- Upload PDF pe S3
+- Download factură prin URL presemnat S3
+- Trimitere factură pe email
+- Istoric facturi per utilizator
+- Suport tip factură și status
+- Componente: InvoiceList, InvoiceDownloadButton
+
+### 7. AUDIENCE TARGETING
+- Model AudienceTarget atașat campaniei
+- Selector demografic (vârstă min/max, gen)
+- Selector geografic (locații)
+- Interese disponibile (lista statică RO/EN)
+- Validare criterii targeting
+- SimpleTargetingSelector — interfață simplificată de targeting
+- DemographicSelector, GeoSelector — componente dedicate
+
+### 8. INTEGRARE TIKTOK ADS
+- Client TikTok API complet implementat
+- Publisher TikTok Ads (creare campanie → ad group → ad)
+- API routes pentru TikTok
+- Câmpuri pe campanie: tiktok_ad_id, tiktok_campaign_id, tiktok_adgroup_id
+- Suport sandbox/production
+- Pagina Integrations pe dashboard
+
+### 9. ANALYTICS DASHBOARD
+- Pagina Analytics cu grafice de performanță
+- Vizualizare: views, clicks, CPA, shares
+- Selectare timeframe pentru date
+- Comparare campanii (reach și ROAS)
+- Grafice: line, area, bar charts
+
+### 10. PAGINI FRONTEND IMPLEMENTATE
+- Landing Page — pagină de prezentare
+- Signin / Signup — autentificare
+- Concept Page — pagina de concept
+- Privacy & Terms — politici
+- Dashboard (cu sub-pagini):
+  • Overview — view general
+  • New Campaign — creare campanie (pagină complexă, ~59KB)
+  • Campaign Details — detalii campanie (editare nume, URL) (~45KB)
+  • My Videos — galeria de videouri
+  • Analytics — grafice și metrici
+  • Billing — facturi și plăți
+  • Buy Tokens — achiziție tokeni
+  • History — istoric campanii
+  • Integrations — integrări (TikTok)
+  • Profile — profil utilizator (cu ProfileTypeSelector)
+  • Settings — setări
+
+### 11. COMPONENTE UI
+- Navbar (cu sub-componente)
+- Footer
+- CommunityFeed — feed public video
+- CreditCardPreview — preview card plată
+- Notification system
+- TokenBalance — balanță tokeni
+- ProfileTypeSelector — selectare tip profil (individual/business)
+- Video components: VideoGallery, VideoGenerator, VideoPreviewModal, VideoThumbnail, VideoUpload
+- Billing components: InvoiceList, InvoiceDownloadButton
+- Targeting components: DemographicSelector, GeoSelector, SimpleTargetingSelector
+
+### 12. CONTEXT & STATE MANAGEMENT
+- LanguageContext — suport multi-limbă (RO/EN)
+- UserContext — date utilizator global
+- Custom hooks
+
+### 13. SERVICII FRONTEND (API Layer)
+- api.ts — client HTTP de bază (cu JWT interceptors)
+- aiService.ts — apeluri AI
+- campaignService.ts — CRUD campanii
+- paymentService.ts — plăți Stripe
+- targetingService.ts — targeting
+- tiktokService.ts — integrare TikTok
+- videoService.ts — video management
+
+### 14. BAZĂ DE DATE (Modele)
+- User (email, parolă, Google ID, profil, câmpuri business)
+- Campaign (detalii campanie, AI content, TikTok IDs, video)
+- Wallet (balanță tokeni)
+- TokenTransaction (istoric tranzacții)
+- VideoGeneration (job-uri generare video, status, URL-uri)
+- AudienceTarget (demografice, geo, interese)
+- Invoice (facturi, status, PDF URL)
+
+### 15. INFRASTRUCTURĂ & DEVOPS
+- Docker Compose cu 5 servicii: PostgreSQL, Redis, Backend, Frontend, LocalStack
+- Hot reload pe backend și frontend
+- Dockerfile-uri separate pentru dev și prod
+- Scripts de dev (dev-start.sh)
+- Health check endpoints (/health, /ready, /api/v1/health)
+- CORS configurat
+- Environment variables management (.env, .env.example)
+
+====================================================================
+## CE NU E ÎNCĂ IMPLEMENTAT / PARȚIAL
+====================================================================
+
+- Meta Ads — cartonașe "Coming Soon" în Integrations, CampaignDetails, LandingPage (Q3 2026)
+- Google Ads — cartonașe "Coming Soon" în Integrations, CampaignDetails, LandingPage (Q4 2026)
+  (ambele sunt la nivel de idee/UI, funcțional rămâne TikTok sandbox)
+- Harta interactivă a campaniilor active (menționată în README, neimplementată)
+- Predicții reach și engagement (menționată în README, posibil doar UI mockup)
+- Email service — structura există dar funcționalitatea e limitată
+- Sistem de notificări real-time (componentă UI există, dar fără WebSocket/push)
+- Tests — directorul există dar e gol
+- Verificare conectivitate DB la /ready endpoint (TODO în cod)
+
+====================================================================
+## DIRECȚIE MULTI-PLATFORM (NOU ADĂUGAT)
+====================================================================
+
+Proiectul are acum o viziune multi-platform:
+- TikTok Ads: FUNCȚIONAL (sandbox) — singura integrare activă
+- Meta Ads (Facebook, Instagram, Reels, Stories): COMING SOON — UI prezent, fără backend
+- Google Ads (YouTube, Search, Display, Shopping): COMING SOON — UI prezent, fără backend
+
+Această direcție e reflectată în:
+- Landing Page: titlul "Social Ads, Simplificate" + secțiune "Platforme Suportate"
+- Integrations Hub: card-uri dedicate Meta & Google cu timeline estimat
+- Campaign Details: secțiune "Alte Platforme" cu badge-uri Coming Soon
+- New Campaign: subtitlul Audience Targeting menționează Meta & Google
+- README și PROJECT_CONTEXT: actualizate cu viziunea multi-platform
+
+====================================================================

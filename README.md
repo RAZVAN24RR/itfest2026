@@ -20,6 +20,7 @@ Cu doar câteva detalii despre campanie (scop, public țintă, locație), platfo
 - 🎬 **Videoclipuri** gata de social media
 - #️⃣ **Hashtag-uri** și strategii de distribuție
 - 🎯 **Recomandări** pentru audiența țintă
+- 📣 **Multi-platform** — TikTok Ads (live), Meta Ads & Google Ads (coming soon)
 
 Astfel, orice inițiativă comunitară poate lansa o campanie eficientă în câteva minute, fără a avea nevoie de expertiză în marketing digital.
 
@@ -30,6 +31,7 @@ Campaia nu doar generează conținut, ci și optimizează campaniile:
 - 📊 Predicții privind reach-ul și engagement-ul
 - 💡 Recomandări pentru maximizarea impactului
 - 🗺️ Harta interactivă a campaniilor active, pentru vizualizarea mobilizării comunității
+- 📣 Suport multi-platform: TikTok (activ), Meta Ads & Google Ads (coming soon)
 
 ## Beneficii
 

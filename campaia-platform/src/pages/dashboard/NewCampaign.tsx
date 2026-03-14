@@ -100,7 +100,7 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
             },
             s3: {
                 title: "Audience Targeting",
-                sub: "Definește cine va vedea reclama ta pe TikTok.",
+                sub: "Definește cine va vedea reclama ta. Acum pe TikTok — în curând și pe Meta și Google.",
                 btnNext: "Video Creative"
             },
             s4: {
@@ -120,7 +120,7 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
                 noVideo: "Niciun video selectat"
             },
             success: { title: "Campanie Trimisă!", sub: "Echipa noastră a preluat scriptul.", back: "Înapoi la Dashboard" },
-            loading: ["Analizăm documentația...", "Scriem mesaje cheie...", "Optimizăm pentru TikTok...", "Generăm variante..."]
+            loading: ["Analizăm documentația...", "Scriem mesaje cheie...", "Optimizăm pentru Social Media...", "Generăm variante..."]
         },
         en: {
             steps: { s1: "Setup", s2: "AI Creative", s3: "Audience", s4: "Video Creative", s5: "Review" },
@@ -143,7 +143,7 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
             },
             s3: {
                 title: "Audience Targeting",
-                sub: "Define who will see your ad on TikTok.",
+                sub: "Define who will see your ad. Currently on TikTok — Meta & Google coming soon.",
                 btnNext: "Video Creative"
             },
             s4: {
@@ -163,7 +163,7 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
                 noVideo: "No video selected"
             },
             success: { title: "Campaign Submitted!", sub: "Our team received the script.", back: "Back to Dashboard" },
-            loading: ["Analyzing product...", "Writing viral hooks...", "Optimizing for TikTok...", "Generating variants..."]
+            loading: ["Analyzing product...", "Writing viral hooks...", "Optimizing for Social Media...", "Generating variants..."]
         }
     };
 

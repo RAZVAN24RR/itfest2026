@@ -701,6 +701,27 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                             </span>
                         </div>
                     </div>
+
+                    {/* Coming Soon Platforms */}
+                    <div className="space-y-3 mt-2">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">{lang === 'ro' ? 'Alte Platforme' : 'Other Platforms'}</p>
+                        <div className="bg-white border border-blue-100 rounded-2xl p-4 flex items-center gap-4 opacity-60">
+                            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white text-lg flex-shrink-0">📘</div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-black text-slate-900">Meta Ads</p>
+                                <p className="text-[10px] text-slate-400">Facebook, Instagram, Reels</p>
+                            </div>
+                            <span className="text-[8px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-lg uppercase tracking-widest border border-amber-100 flex-shrink-0">Soon</span>
+                        </div>
+                        <div className="bg-white border border-green-100 rounded-2xl p-4 flex items-center gap-4 opacity-60">
+                            <div className="w-10 h-10 bg-gradient-to-br from-red-500 via-yellow-400 to-green-500 rounded-xl flex items-center justify-center text-white text-lg flex-shrink-0">🔍</div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-black text-slate-900">Google Ads</p>
+                                <p className="text-[10px] text-slate-400">YouTube, Search, Display</p>
+                            </div>
+                            <span className="text-[8px] font-black text-amber-600 bg-amber-50 px-2 py-1 rounded-lg uppercase tracking-widest border border-amber-100 flex-shrink-0">Soon</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 

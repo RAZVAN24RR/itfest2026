@@ -64,7 +64,7 @@ itfest2026/
 3. **Campaign Creation:** Users input basic community concepts (e.g., "Recycle Day in Park X").
 4. **AI Generation:** The platform generates textual scripts, image assets, and a ready-to-post video.
 5. **Targeting:** AI suggests specific demographics for reaching the ideal local audience.
-6. **Publishing:** Integration hooks format output for social networks (like TikTok).
+6. **Publishing:** Integration hooks format output for social networks (TikTok live; Meta Ads & Google Ads coming soon).
 
 ---
 

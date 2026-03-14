@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Share2, AlertCircle, ExternalLink, RefreshCw, ShieldCheck, Activity, Search, Box, TrendingUp, Users, MousePointer2, Target, BarChart3 } from 'lucide-react';
+import { Share2, AlertCircle, ExternalLink, RefreshCw, ShieldCheck, Activity, Search, Box, TrendingUp, Users, MousePointer2, Target, BarChart3, Clock, Rocket } from 'lucide-react';
 import tiktokService, { type TikTokStatus } from '../../services/tiktokService';
 import { useLanguage } from '../../context/LanguageContext';
 
@@ -15,8 +15,8 @@ export default function Integrations() {
 
     const t = {
         ro: {
-            title: "Admin Dashboard - TikTok",
-            sub: "Monitorizare flux campanii globale Campaia (Sandbox).",
+            title: "Integrations Hub",
+            sub: "Gestionează integrările tale cu platformele de publicitate.",
             tiktok: "TikTok Ads Master",
             tiktok_sub: "Contul centralizat de publicare.",
             connected: "Conectat",
@@ -40,8 +40,8 @@ export default function Integrations() {
             cpc: "CPC"
         },
         en: {
-            title: "Admin Dashboard - TikTok",
-            sub: "Monitoring global Campaia campaign flow (Sandbox).",
+            title: "Integrations Hub",
+            sub: "Manage your advertising platform integrations.",
             tiktok: "TikTok Ads Master",
             tiktok_sub: "Centralized publishing account.",
             connected: "Connected",
@@ -259,6 +259,97 @@ export default function Integrations() {
                                     <p className="text-sm font-bold text-slate-400">{t.no_campaigns}</p>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Coming Soon Platforms */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Meta Ads - Coming Soon */}
+                <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden relative group">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-blue-50 rounded-full -mr-16 -mt-16 opacity-40 group-hover:scale-125 transition-transform duration-500" />
+                    <div className="p-8">
+                        <div className="flex items-center gap-5 mb-6">
+                            <div className="w-14 h-14 bg-blue-600 rounded-[1.5rem] flex items-center justify-center text-white text-2xl shadow-xl shadow-blue-600/20">
+                                📘
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-slate-900 tracking-tight">Meta Ads</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center gap-1.5">
+                                        <Clock size={10} />
+                                        Coming Soon
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">
+                            {language === 'ro'
+                                ? 'Publică campanii direct pe Facebook și Instagram. Targetare avansată pe baza intereselor, demograficelor și comportamentului utilizatorilor din ecosistemul Meta.'
+                                : 'Publish campaigns directly on Facebook and Instagram. Advanced targeting based on interests, demographics, and user behavior across the Meta ecosystem.'
+                            }
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full uppercase tracking-widest">Facebook</span>
+                            <span className="text-[9px] font-black bg-pink-50 text-pink-600 px-3 py-1.5 rounded-full uppercase tracking-widest">Instagram</span>
+                            <span className="text-[9px] font-black bg-purple-50 text-purple-600 px-3 py-1.5 rounded-full uppercase tracking-widest">Reels</span>
+                            <span className="text-[9px] font-black bg-indigo-50 text-indigo-600 px-3 py-1.5 rounded-full uppercase tracking-widest">Stories</span>
+                        </div>
+                        <div className="mt-6 pt-6 border-t border-slate-100">
+                            <div className="flex items-center gap-3 bg-amber-50 rounded-2xl p-4 border border-amber-100">
+                                <Rocket size={18} className="text-amber-600 flex-shrink-0" />
+                                <p className="text-xs font-bold text-amber-800">
+                                    {language === 'ro'
+                                        ? 'Estimat: Q3 2026 — Integrare completă cu Meta Business Suite'
+                                        : 'Estimated: Q3 2026 — Full Meta Business Suite integration'
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Google Ads - Coming Soon */}
+                <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/50 overflow-hidden relative group">
+                    <div className="absolute top-0 right-0 w-40 h-40 bg-green-50 rounded-full -mr-16 -mt-16 opacity-40 group-hover:scale-125 transition-transform duration-500" />
+                    <div className="p-8">
+                        <div className="flex items-center gap-5 mb-6">
+                            <div className="w-14 h-14 bg-gradient-to-br from-red-500 via-yellow-400 to-green-500 rounded-[1.5rem] flex items-center justify-center text-white text-2xl shadow-xl shadow-green-500/20">
+                                🔍
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-black text-slate-900 tracking-tight">Google Ads</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-[10px] font-black uppercase text-amber-600 tracking-widest flex items-center gap-1.5">
+                                        <Clock size={10} />
+                                        Coming Soon
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <p className="text-sm text-slate-500 font-medium leading-relaxed mb-6">
+                            {language === 'ro'
+                                ? 'Extinde reach-ul campaniilor tale pe YouTube, Google Search și Display Network. Video ads generat de AI, optimizat automat pentru fiecare placement.'
+                                : 'Extend your campaign reach across YouTube, Google Search, and the Display Network. AI-generated video ads automatically optimized for each placement.'
+                            }
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                            <span className="text-[9px] font-black bg-red-50 text-red-600 px-3 py-1.5 rounded-full uppercase tracking-widest">YouTube</span>
+                            <span className="text-[9px] font-black bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full uppercase tracking-widest">Search</span>
+                            <span className="text-[9px] font-black bg-green-50 text-green-600 px-3 py-1.5 rounded-full uppercase tracking-widest">Display</span>
+                            <span className="text-[9px] font-black bg-amber-50 text-amber-600 px-3 py-1.5 rounded-full uppercase tracking-widest">Shopping</span>
+                        </div>
+                        <div className="mt-6 pt-6 border-t border-slate-100">
+                            <div className="flex items-center gap-3 bg-amber-50 rounded-2xl p-4 border border-amber-100">
+                                <Rocket size={18} className="text-amber-600 flex-shrink-0" />
+                                <p className="text-xs font-bold text-amber-800">
+                                    {language === 'ro'
+                                        ? 'Estimat: Q4 2026 — YouTube Ads, Search & Display Network'
+                                        : 'Estimated: Q4 2026 — YouTube Ads, Search & Display Network'
+                                    }
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
