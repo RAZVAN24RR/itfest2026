@@ -6,6 +6,8 @@ API endpoints for AI-powered generation (scripts, hashtags, audience).
 
 from fastapi import APIRouter, HTTPException, status
 
+import math
+
 from app.api.deps import CurrentUser, DbSession
 from app.core.config import settings
 from app.schemas.ai import (
@@ -27,6 +29,12 @@ from app.services.wallet_service import WalletService, InsufficientBalanceError
 router = APIRouter()
 
 
+def _calc_cost(base_cost: int, model_key: str) -> int:
+    """Apply model multiplier to base token cost."""
+    multiplier = text_generator.get_cost_multiplier(model_key)
+    return math.ceil(base_cost * multiplier)
+
+
 @router.get(
     "/status",
     response_model=AIStatusResponse,
@@ -37,7 +45,7 @@ async def get_ai_status() -> AIStatusResponse:
     available = await text_generator.check_available()
     return AIStatusResponse(
         available=available,
-        model=settings.ollama_model,
+        models=text_generator.MODELS,
         provider="ollama",
     )
 
@@ -55,12 +63,11 @@ async def generate_script(
     """
     Generate TikTok ad script variants using AI.
     
-    Costs 5 tokens per generation (regardless of variants count).
+    Cost depends on model: llama (base) or deepseek (2x).
     Returns multiple script variants for the user to choose from.
     """
-    tokens_cost = settings.cost_script_generation
+    tokens_cost = _calc_cost(settings.cost_script_generation, data.ai_model)
     
-    # Check balance
     wallet_service = WalletService(db)
     has_balance = await wallet_service.check_balance(user.id, tokens_cost)
     if not has_balance:
@@ -70,7 +77,6 @@ async def generate_script(
         )
     
     try:
-        # Generate scripts
         scripts = await text_generator.generate_script(
             product_description=data.product_description,
             product_url=data.product_url,
@@ -78,13 +84,13 @@ async def generate_script(
             duration_seconds=data.duration_seconds,
             language=data.language,
             variants=data.variants,
+            model_key=data.ai_model,
         )
         
-        # Deduct tokens
         await wallet_service.spend_tokens(
             user_id=user.id,
             amount=tokens_cost,
-            description=f"Script generation ({data.tone} tone, {data.variants} variants)",
+            description=f"Script generation [{data.ai_model}] ({data.tone} tone, {data.variants} variants)",
             action_type="SCRIPT",
         )
         
@@ -95,6 +101,7 @@ async def generate_script(
             duration_seconds=data.duration_seconds,
             language=data.language,
             variants_count=len(scripts),
+            ai_model=data.ai_model,
         )
         
     except RuntimeError as e:
@@ -117,11 +124,10 @@ async def generate_hashtags(
     """
     Generate relevant hashtags for a TikTok ad.
     
-    Costs 2 tokens per generation.
+    Cost depends on model: llama (base) or deepseek (2x).
     """
-    tokens_cost = settings.cost_hashtag_suggestion
+    tokens_cost = _calc_cost(settings.cost_hashtag_suggestion, data.ai_model)
     
-    # Check balance
     wallet_service = WalletService(db)
     has_balance = await wallet_service.check_balance(user.id, tokens_cost)
     if not has_balance:
@@ -131,23 +137,23 @@ async def generate_hashtags(
         )
     
     try:
-        # Generate hashtags
         hashtags = await text_generator.generate_hashtags(
             product_description=data.product_description,
             count=data.count,
+            model_key=data.ai_model,
         )
         
-        # Deduct tokens
         await wallet_service.spend_tokens(
             user_id=user.id,
             amount=tokens_cost,
-            description="Hashtag generation",
+            description=f"Hashtag generation [{data.ai_model}]",
             action_type="SCRIPT",
         )
         
         return HashtagGenerateResponse(
             hashtags=hashtags,
             tokens_spent=tokens_cost,
+            ai_model=data.ai_model,
         )
         
     except RuntimeError as e:
@@ -170,11 +176,10 @@ async def suggest_audience(
     """
     Get AI-powered audience suggestions for a product.
     
-    Costs 3 tokens per suggestion.
+    Cost depends on model: llama (base) or deepseek (2x).
     """
-    tokens_cost = settings.cost_audience_suggestion
+    tokens_cost = _calc_cost(settings.cost_audience_suggestion, data.ai_model)
     
-    # Check balance
     wallet_service = WalletService(db)
     has_balance = await wallet_service.check_balance(user.id, tokens_cost)
     if not has_balance:
@@ -184,16 +189,15 @@ async def suggest_audience(
         )
     
     try:
-        # Generate suggestions
         result = await text_generator.suggest_audience(
             product_description=data.product_description,
+            model_key=data.ai_model,
         )
         
-        # Deduct tokens
         await wallet_service.spend_tokens(
             user_id=user.id,
             amount=tokens_cost,
-            description="Audience suggestion",
+            description=f"Audience suggestion [{data.ai_model}]",
             action_type="TARGETING",
         )
         
@@ -204,6 +208,7 @@ async def suggest_audience(
             locations=result["locations"],
             description=result["description"],
             tokens_spent=tokens_cost,
+            ai_model=data.ai_model,
         )
         
     except RuntimeError as e:
@@ -226,11 +231,10 @@ async def generate_marketing_description(
     """
     Generate a short (20-30 words) marketing description with one emoji.
     
-    Costs 5 tokens per generation.
+    Cost depends on model: llama (base) or deepseek (2x).
     """
-    tokens_cost = settings.cost_marketing_description
+    tokens_cost = _calc_cost(settings.cost_marketing_description, data.ai_model)
     
-    # Check balance
     wallet_service = WalletService(db)
     has_balance = await wallet_service.check_balance(user.id, tokens_cost)
     if not has_balance:
@@ -240,23 +244,23 @@ async def generate_marketing_description(
         )
     
     try:
-        # Generate description
         description = await text_generator.generate_marketing_description(
             product_description=data.product_description,
             language=data.language,
+            model_key=data.ai_model,
         )
         
-        # Deduct tokens
         await wallet_service.spend_tokens(
             user_id=user.id,
             amount=tokens_cost,
-            description="Marketing description generation",
+            description=f"Marketing description [{data.ai_model}]",
             action_type="SCRIPT",
         )
         
         return MarketingDescriptionResponse(
             description=description,
             tokens_spent=tokens_cost,
+            ai_model=data.ai_model,
         )
         
     except RuntimeError as e:
@@ -279,11 +283,10 @@ async def generate_kling_prompt(
     """
     Generate a detailed cinematic prompt for Kling AI video generation.
     
-    Costs 5 tokens per generation.
+    Cost depends on model: llama (base) or deepseek (2x).
     """
-    tokens_cost = settings.cost_kling_prompt
+    tokens_cost = _calc_cost(settings.cost_kling_prompt, data.ai_model)
     
-    # Check balance
     wallet_service = WalletService(db)
     has_balance = await wallet_service.check_balance(user.id, tokens_cost)
     if not has_balance:
@@ -293,23 +296,23 @@ async def generate_kling_prompt(
         )
     
     try:
-        # Generate prompt
         prompt = await text_generator.generate_kling_prompt(
             product_description=data.product_description,
             language=data.language,
+            model_key=data.ai_model,
         )
         
-        # Deduct tokens
         await wallet_service.spend_tokens(
             user_id=user.id,
             amount=tokens_cost,
-            description="Kling AI prompt generation",
+            description=f"Kling AI prompt [{data.ai_model}]",
             action_type="SCRIPT",
         )
         
         return KlingPromptResponse(
             prompt=prompt,
             tokens_spent=tokens_cost,
+            ai_model=data.ai_model,
         )
         
     except RuntimeError as e:

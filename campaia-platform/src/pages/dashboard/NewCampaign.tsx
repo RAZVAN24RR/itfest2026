@@ -2,7 +2,7 @@ import { ChevronRight, Loader2, Send, CheckCircle2, Sparkles, CreditCard, Users,
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CampaignData } from "../../interfaces/campaign.ts";
 import { useEffect, useState, useRef } from "react";
-import aiService, { type ToneType, AI_COSTS } from "../../services/aiService";
+import aiService, { type ToneType, type AIModelType, AI_MODELS, getAICosts } from "../../services/aiService";
 import paymentService from "../../services/paymentService";
 import VideoGenerator from '../../components/VideoGenerator';
 import VideoGallery from '../../components/VideoGallery';
@@ -45,6 +45,7 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
     const [isVideoGenerating, setIsVideoGenerating] = useState(false);
     const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
     const [selectedTone, setSelectedTone] = useState<ToneType>('viral');
+    const [selectedModel, setSelectedModel] = useState<AIModelType>('llama');
     const [scriptVariants, setScriptVariants] = useState<string[]>([]);
     const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
     const [tokenBalance, setTokenBalance] = useState(0);
@@ -204,8 +205,8 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
     const handleGenerateAI = async () => {
         if (!formData.productDesc) return;
 
-        // Check balance (Total cost = script + marketing desc + kling prompt)
-        const totalCost = AI_COSTS.SCRIPT_GENERATION + AI_COSTS.MARKETING_DESCRIPTION + AI_COSTS.KLING_PROMPT;
+        const costs = getAICosts(selectedModel);
+        const totalCost = costs.SCRIPT_GENERATION + costs.MARKETING_DESCRIPTION + costs.KLING_PROMPT;
         if (tokenBalance < totalCost) {
             setAiError(t.s2.noBalance);
             return;
@@ -215,7 +216,6 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
         setAiError(null);
 
         try {
-            // Run all AI generations in parallel
             const [scriptRes, marketingRes, klingRes] = await Promise.all([
                 aiService.generateScript({
                     product_description: formData.productDesc,
@@ -224,9 +224,10 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
                     duration_seconds: 15,
                     language: lang === 'ro' ? 'ro' : 'en',
                     variants: 5,
+                    ai_model: selectedModel,
                 }),
-                aiService.generateMarketingDescription(formData.productDesc, lang === 'ro' ? 'ro' : 'en'),
-                aiService.generateKlingPrompt(formData.productDesc, lang === 'ro' ? 'ro' : 'en')
+                aiService.generateMarketingDescription(formData.productDesc, lang === 'ro' ? 'ro' : 'en', selectedModel),
+                aiService.generateKlingPrompt(formData.productDesc, lang === 'ro' ? 'ro' : 'en', selectedModel)
             ]);
 
             setScriptVariants(scriptRes.scripts);
@@ -262,7 +263,7 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
         if (selectedScript) {
             try {
                 // We use the selected script as the new basis for the visual prompt
-                const response = await aiService.generateKlingPrompt(selectedScript, lang === 'ro' ? 'ro' : 'en');
+                const response = await aiService.generateKlingPrompt(selectedScript, lang === 'ro' ? 'ro' : 'en', selectedModel);
                 setFormData(prev => ({
                     ...prev,
                     klingPrompt: response.prompt
@@ -302,7 +303,8 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
     };
 
     const canProceedToStep2 = formData.name && formData.name.length >= 2 && formData.url.length > 3 && formData.budget > 0;
-    const hasEnoughTokens = tokenBalance >= AI_COSTS.SCRIPT_GENERATION;
+    const currentCosts = getAICosts(selectedModel);
+    const hasEnoughTokens = tokenBalance >= (currentCosts.SCRIPT_GENERATION + currentCosts.MARKETING_DESCRIPTION + currentCosts.KLING_PROMPT);
 
     if (showSuccess) {
         return (
@@ -502,7 +504,7 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
                                         <Sparkles size={16} className="text-purple-600" />
                                     </div>
                                     <div className="flex items-baseline gap-2">
-                                        <span className="text-3xl font-black text-purple-700">{AI_COSTS.SCRIPT_GENERATION}</span>
+                                        <span className="text-3xl font-black text-purple-700">{currentCosts.SCRIPT_GENERATION + currentCosts.MARKETING_DESCRIPTION + currentCosts.KLING_PROMPT}</span>
                                         <span className="text-[10px] font-black text-purple-400 uppercase">{t.s2.tokens}</span>
                                     </div>
                                 </div>
@@ -551,6 +553,53 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
                                             )}
                                         </button>
                                     ))}
+                                </div>
+                            </div>
+
+                            {/* AI Model Selector */}
+                            <div className="space-y-4">
+                                <label className="text-xs font-black text-slate-400 uppercase tracking-widest block">
+                                    {lang === 'ro' ? 'Model AI' : 'AI Model'}
+                                </label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    {AI_MODELS.map(m => {
+                                        const costs = getAICosts(m.id);
+                                        const totalCost = costs.SCRIPT_GENERATION + costs.MARKETING_DESCRIPTION + costs.KLING_PROMPT;
+                                        return (
+                                            <button
+                                                key={m.id}
+                                                type="button"
+                                                onClick={() => setSelectedModel(m.id)}
+                                                className={`relative group p-5 rounded-3xl border-2 transition-all duration-300 text-left ${selectedModel === m.id
+                                                    ? 'border-purple-600 bg-white shadow-xl shadow-purple-500/10'
+                                                    : 'border-slate-50 bg-slate-50/50 hover:border-slate-200'
+                                                    }`}
+                                            >
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className={`font-black text-sm ${selectedModel === m.id ? 'text-purple-700' : 'text-slate-700'}`}>
+                                                        {m.label}
+                                                    </span>
+                                                    <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full ${selectedModel === m.id
+                                                        ? 'bg-purple-100 text-purple-700'
+                                                        : 'bg-slate-100 text-slate-400'
+                                                        }`}>
+                                                        {m.badge} tokens
+                                                    </span>
+                                                </div>
+                                                <p className={`text-xs ${selectedModel === m.id ? 'text-purple-500' : 'text-slate-400'}`}>
+                                                    {m.desc}
+                                                </p>
+                                                <p className={`text-[10px] mt-1.5 font-semibold ${selectedModel === m.id ? 'text-purple-400' : 'text-slate-300'}`}>
+                                                    {lang === 'ro' ? `Cost total: ${totalCost} tokeni` : `Total cost: ${totalCost} tokens`}
+                                                </p>
+                                                {selectedModel === m.id && (
+                                                    <div className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-purple-600 rounded-full flex items-center justify-center border-2 border-white">
+                                                        <div className="h-1.5 w-1.5 bg-white rounded-full" />
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 

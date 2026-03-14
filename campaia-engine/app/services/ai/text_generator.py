@@ -43,34 +43,53 @@ class TextGenerator:
     """
     Text generator service using Ollama for local AI.
     
-    Can generate:
-    - TikTok ad scripts
-    - Product descriptions
-    - Hashtag suggestions
-    - Audience suggestions
+    Supports two models:
+    - "deepseek" (deepseek-r1:8b) — premium, better reasoning, costs more tokens
+    - "llama" (llama3.2:latest) — lite, fast, costs fewer tokens
     """
+
+    MODELS = {
+        "deepseek": "deepseek-r1:8b",
+        "llama": "llama3.2:latest",
+    }
+
+    COST_MULTIPLIER = {
+        "deepseek": 2.0,
+        "llama": 1.0,
+    }
 
     def __init__(self):
         self.base_url = settings.ollama_url
-        self.model = settings.ollama_model
 
-    async def _generate(self, prompt: str, system_prompt: str = "") -> str:
+    def _resolve_model(self, model_key: str | None) -> str:
+        if model_key and model_key in self.MODELS:
+            return self.MODELS[model_key]
+        return settings.ollama_model
+
+    def get_cost_multiplier(self, model_key: str | None) -> float:
+        if model_key and model_key in self.COST_MULTIPLIER:
+            return self.COST_MULTIPLIER[model_key]
+        return 2.0
+
+    async def _generate(self, prompt: str, system_prompt: str = "", model_key: str | None = None) -> str:
         """
         Generate text using Ollama API.
         
         Args:
             prompt: The user prompt
             system_prompt: Optional system prompt for context
+            model_key: "deepseek" or "llama" (defaults to deepseek)
             
         Returns:
             Generated text
         """
+        model = self._resolve_model(model_key)
         async with httpx.AsyncClient(timeout=300.0) as client:
             try:
                 response = await client.post(
                     f"{self.base_url}/api/generate",
                     json={
-                        "model": self.model,
+                        "model": model,
                         "prompt": prompt,
                         "system": system_prompt,
                         "stream": False,
@@ -95,6 +114,7 @@ class TextGenerator:
         duration_seconds: int = 15,
         language: str = "en",
         variants: int = 5,
+        model_key: str | None = None,
     ) -> list[str]:
         """Generate ad scripts in the user's language."""
         # FORCED LANGUAGE DETECTION
@@ -129,7 +149,7 @@ Write 5 TikTok ad scripts that stop the scroll.
 Example: Tired of boring ads? 🙄 Grow your brand with our elite tools. Get started today! 🚀 ###
 """
 
-        response = await self._generate(full_prompt, system_prompt)
+        response = await self._generate(full_prompt, system_prompt, model_key=model_key)
         
         # Clean and parse variants from response
         scripts = []
@@ -217,6 +237,7 @@ Example: Tired of boring ads? 🙄 Grow your brand with our elite tools. Get sta
         self,
         product_description: str,
         count: int = 10,
+        model_key: str | None = None,
     ) -> list[str]:
         """
         Generate relevant hashtags for a TikTok ad.
@@ -241,7 +262,7 @@ Include a mix of:
 
 Return ONLY the hashtags, one per line, each starting with #."""
 
-        response = await self._generate(prompt, system_prompt)
+        response = await self._generate(prompt, system_prompt, model_key=model_key)
         
         # Parse hashtags from response
         hashtags = []
@@ -257,6 +278,7 @@ Return ONLY the hashtags, one per line, each starting with #."""
     async def suggest_audience(
         self,
         product_description: str,
+        model_key: str | None = None,
     ) -> dict:
         """
         Suggest target audience for a product.
@@ -280,7 +302,7 @@ INTERESTS: [comma-separated list of 5 interests]
 LOCATIONS: [comma-separated list of suggested locations or "global"]
 DESCRIPTION: [2-3 sentence description of the ideal customer]"""
 
-        response = await self._generate(prompt, system_prompt)
+        response = await self._generate(prompt, system_prompt, model_key=model_key)
         
         # Parse response
         result = {
@@ -312,6 +334,7 @@ DESCRIPTION: [2-3 sentence description of the ideal customer]"""
         self,
         product_description: str,
         language: str = "en",
+        model_key: str | None = None,
     ) -> str:
         """Generate a high-impact marketing punchline."""
         is_ro = detect_is_romanian(product_description) or language == "ro"
@@ -323,13 +346,14 @@ DESCRIPTION: [2-3 sentence description of the ideal customer]"""
             system_prompt = "You are a brand strategist. You write in ENGLISH."
             prompt = f"Write a marketing sentence (max 25 words) with an emoji at the end for: {product_description}"
 
-        response = await self._generate(prompt, system_prompt)
+        response = await self._generate(prompt, system_prompt, model_key=model_key)
         return response.strip()
 
     async def generate_kling_prompt(
         self,
         product_description: str,
         language: str = "en",
+        model_key: str | None = None,
     ) -> str:
         """Generate a professional cinematic prompt for Kling AI."""
         prompt = f"""Create a masterpiece cinematic video prompt for Kling AI about: "{product_description}".
@@ -342,7 +366,7 @@ Camera: Slow tracking shot, shallow depth of field, bokeh background, 35mm lens.
 Atmosphere: Premium, optimistic, vibrant colors.
 NO TEXT, NO LOGOS, just the visual description in English."""
 
-        response = await self._generate(prompt, "")
+        response = await self._generate(prompt, "", model_key=model_key)
         return response.strip()
 
     async def check_available(self) -> bool:

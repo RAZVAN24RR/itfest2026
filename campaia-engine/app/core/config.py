@@ -101,7 +101,8 @@ class Settings(BaseSettings):
     # Ollama (Local AI)
     # ============================================
     ollama_url: str = Field(default="http://localhost:11434", description="Ollama API URL")
-    ollama_model: str = Field(default="deepseek-r1:8b", description="Default Ollama model for text generation")
+    ollama_model: str = Field(default="deepseek-r1:8b", description="Default Ollama model (premium)")
+    ollama_model_lite: str = Field(default="llama3.2:latest", description="Lite Ollama model (fast/cheap)")
 
     # ============================================
     # External APIs - Kling AI
