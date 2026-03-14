@@ -15,7 +15,7 @@ export async function sendMessage(
   history: ChatMessage[],
   campaignContext?: string,
 ): Promise<ChatResponse> {
-  return apiRequest<ChatResponse>('/agent/chat', {
+  return apiRequest<ChatResponse>('/api/v1/agent/chat', {
     method: 'POST',
     body: JSON.stringify({
       message,

@@ -20,18 +20,18 @@ export interface ScheduleRequest {
 }
 
 export async function getSchedule(campaignId: string): Promise<CampaignSchedule | null> {
-  return apiRequest<CampaignSchedule | null>(`/scheduler/${campaignId}`);
+  return apiRequest<CampaignSchedule | null>(`/api/v1/scheduler/${campaignId}`);
 }
 
 export async function saveSchedule(campaignId: string, data: ScheduleRequest): Promise<CampaignSchedule> {
-  return apiRequest<CampaignSchedule>(`/scheduler/${campaignId}`, {
+  return apiRequest<CampaignSchedule>(`/api/v1/scheduler/${campaignId}`, {
     method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
 export async function deleteSchedule(campaignId: string): Promise<void> {
-  await apiRequest(`/scheduler/${campaignId}`, { method: 'DELETE' });
+  await apiRequest(`/api/v1/scheduler/${campaignId}`, { method: 'DELETE' });
 }
 
 export const DAY_LABELS_RO = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
