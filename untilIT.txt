@@ -132,7 +132,10 @@ Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă,
 - SimpleTargetingSelector — interfață simplificată de targeting
 - DemographicSelector, GeoSelector — componente dedicate
 
-### 8. INTEGRARE TIKTOK ADS
+### 8. INTEGRARE TIKTOK ADS (+ Sandbox)
+- Ghid rapid: docs/TIKTOK_SANDBOX.md (env, flux publicare, verificare Ads Manager)
+
+### 8b. INTEGRARE TIKTOK ADS (detaliu)
 - Client TikTok API complet implementat
 - Publisher TikTok Ads (creare campanie → ad group → ad)
 - API routes pentru TikTok
