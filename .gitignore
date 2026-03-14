@@ -54,3 +54,4 @@ htmlcov/
 .coverage
 coverage.xml
 scripts/local-video-env/
+logs/

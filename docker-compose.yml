@@ -156,6 +156,13 @@ services:
   #     - itfest-network
 
   # ============================================
+  # LOCAL VIDEO AI - runs on host with GPU
+  # ============================================
+  # NOTE: Runs natively on host for GPU access (snap Docker lacks nvidia-container-toolkit).
+  # Start with: ./scripts/start-video-ai.sh
+  # Backend reaches it at STABLE_VIDEO_URL=http://localhost:8001
+
+  # ============================================
   # LOCALSTACK - Mock AWS Services (S3, SQS)
   # ============================================
   localstack:

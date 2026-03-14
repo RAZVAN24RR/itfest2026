@@ -1,0 +1,22 @@
+FROM pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime
+
+ENV PYTHONUNBUFFERED=1
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir \
+    diffusers transformers accelerate safetensors \
+    fastapi uvicorn[standard] pydantic
+
+COPY local_video_service.py .
+
+ENV HF_HOME=/data/hf-cache
+VOLUME /data/hf-cache
+
+EXPOSE 8001
+
+CMD ["python", "local_video_service.py"]

@@ -71,6 +71,19 @@ start() {
     echo -e "${GREEN}Starting Campaia development environment...${NC}"
     docker-compose up -d $build_flag
 
+    # Start Local Video AI service on host (GPU)
+    if [ -f "$SCRIPT_DIR/local-video-env/bin/activate" ]; then
+        if ! curl -s http://localhost:8001/health >/dev/null 2>&1; then
+            echo -e "${YELLOW}Starting Local Video AI (GPU)...${NC}"
+            nohup bash "$SCRIPT_DIR/start-video-ai.sh" > "$PROJECT_ROOT/logs/video-ai.log" 2>&1 &
+            echo -e "${GREEN}Local Video AI starting in background (PID: $!)${NC}"
+        else
+            echo -e "${GREEN}Local Video AI already running on :8001${NC}"
+        fi
+    else
+        echo -e "${YELLOW}Local Video AI venv not found — skipping (run scripts/start-video-ai.sh manually)${NC}"
+    fi
+
     echo ""
     echo -e "${GREEN}✅ All services started!${NC}"
     echo ""
@@ -81,6 +94,7 @@ start() {
     echo -e "  🗄️  Database:  ${GREEN}localhost:5432${NC}"
     echo -e "  💾 Redis:      ${GREEN}localhost:6379${NC}"
     echo -e "  ☁️  LocalStack: ${GREEN}http://localhost:4566${NC}"
+    echo -e "  🎬 Video AI:   ${GREEN}http://localhost:8001${NC} (GPU)"
     echo ""
 }
 
