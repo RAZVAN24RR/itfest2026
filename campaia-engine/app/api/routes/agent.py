@@ -178,11 +178,12 @@ async def agent_chat(
         },
     }
 
+    # Only IDs that support generateContent on v1beta (no -latest aliases; they 404)
     models_to_try = [
         settings.gemini_model.strip() or "gemini-2.0-flash",
         "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
+        "gemini-1.5-flash-002",
+        "gemini-1.5-pro-002",
     ]
     seen = set()
     models_to_try = [m for m in models_to_try if m and not (m in seen or seen.add(m))]
