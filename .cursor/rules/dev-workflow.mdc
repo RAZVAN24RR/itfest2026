@@ -1,0 +1,16 @@
+---
+description: După modificări — Docker live + commit-uri mici
+alwaysApply: true
+---
+
+# Workflow ITFest / Campaia
+
+1. **Docker după modificări** — Ca proiectul să fie live local, pornește sau reîmprospătează stack-ul:
+   - `./scripts/dev-start.sh` sau `docker compose up -d` din rădăcina repo-ului.
+   - Frontend: http://localhost:5173 — Backend: http://localhost:8000
+
+2. **Commit-uri mici** — Preferă commit-uri atomice, mesaje scurte în română sau engleză, ex.:
+   - `fix: ...` / `feat: ...` / `docs: ...` / `chore: ...`
+   - Un singur subiect per commit când e posibil.
+
+3. **Nu rescrie** flow-uri mari deja implementate; adăugări incrementale (vezi `untilIT.txt`).
