@@ -63,7 +63,8 @@ export default function CampaiaAgent() {
       setMessages([...newHistory, { role: 'assistant', content: res.reply }]);
       if (res.suggestions?.length > 0) setSuggestions(res.suggestions);
     } catch (e) {
-      setError(t.error);
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg && msg !== 'Request failed' ? msg : t.error);
     } finally {
       setIsLoading(false);
       inputRef.current?.focus();

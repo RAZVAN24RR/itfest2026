@@ -57,6 +57,8 @@ services:
       dockerfile: Dockerfile.dev
     container_name: itfest-backend
     restart: unless-stopped
+    env_file:
+      - .env
     network_mode: host
     volumes:
       # Mount source code for hot reload
@@ -88,6 +90,7 @@ services:
       PIKA_API_KEY: ${PIKA_API_KEY:-}
       STABLE_VIDEO_URL: ${STABLE_VIDEO_URL:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.0-flash}
       TIKTOK_APP_ID: ${TIKTOK_APP_ID:-}
       TIKTOK_APP_SECRET: ${TIKTOK_APP_SECRET:-}
       TIKTOK_ACCESS_TOKEN: ${TIKTOK_ACCESS_TOKEN:-}

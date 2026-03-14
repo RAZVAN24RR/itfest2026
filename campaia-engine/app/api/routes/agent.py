@@ -178,22 +178,57 @@ async def agent_chat(
         },
     }
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={api_key}"
+    models_to_try = [
+        settings.gemini_model.strip() or "gemini-2.0-flash",
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-flash-latest",
+    ]
+    seen = set()
+    models_to_try = [m for m in models_to_try if m and not (m in seen or seen.add(m))]
 
+    last_err = ""
     try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(url, json=body)
-            if resp.status_code != 200:
-                logger.error("Gemini API error %d: %s", resp.status_code, resp.text[:500])
-                raise HTTPException(502, f"Gemini API error: {resp.status_code}")
-
-            data = resp.json()
-            reply_text = data["candidates"][0]["content"]["parts"][0]["text"]
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            for model_id in models_to_try:
+                url = (
+                    f"https://generativelanguage.googleapis.com/v1beta/models/"
+                    f"{model_id}:generateContent?key={api_key}"
+                )
+                resp = await client.post(url, json=body)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    cands = data.get("candidates") or []
+                    if not cands:
+                        block = data.get("promptFeedback") or {}
+                        last_err = block.get("blockReason") or "no candidates (safety filter?)"
+                        logger.warning("Gemini empty candidates model=%s %s", model_id, last_err)
+                        continue
+                    parts = (cands[0].get("content") or {}).get("parts") or []
+                    if not parts or not parts[0].get("text"):
+                        last_err = "Empty model reply"
+                        continue
+                    reply_text = parts[0]["text"]
+                    break
+                # Parse Google error body
+                try:
+                    err_j = resp.json().get("error") or {}
+                    last_err = err_j.get("message") or resp.text[:300]
+                except Exception:
+                    last_err = resp.text[:300]
+                logger.error("Gemini %s HTTP %s: %s", model_id, resp.status_code, last_err)
+                if resp.status_code in (401, 403) and "API key" in (last_err or ""):
+                    raise HTTPException(502, f"Gemini: cheie invalidă sau API dezactivat — {last_err[:200]}")
+            else:
+                raise HTTPException(
+                    502,
+                    f"Gemini: {last_err[:280] or 'toate modelele au eșuat — verifică cheia pe https://aistudio.google.com/apikey'}",
+                )
     except HTTPException:
         raise
     except Exception as e:
         logger.error("Gemini call failed: %s", e)
-        raise HTTPException(502, f"Gemini API call failed: {e}")
+        raise HTTPException(502, f"Gemini: {e!s}")
 
     suggestions = _generate_suggestions(req.message, len(req.history))
     return ChatResponse(reply=reply_text, suggestions=suggestions)
