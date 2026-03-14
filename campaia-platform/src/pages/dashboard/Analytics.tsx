@@ -1,312 +1,452 @@
-import React, { useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import {
-    LineChart, Line, AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  PolarAngleAxis,
+  PolarGrid,
+  Radar,
+  RadarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
 import {
-    TrendingUp, Users, Eye, MousePointerClick, ArrowUpRight, ArrowDownRight, Activity, Calendar, Share2, Video, DollarSign
+  Activity,
+  ArrowUpRight,
+  BarChart3,
+  Heart,
+  MapPin,
+  Megaphone,
+  Share2,
+  Sparkles,
+  Target,
+  TrendingUp,
+  Users,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useLanguage } from '../../context/LanguageContext';
 
-const generateMockData = () => {
-    const data = [];
-    const date = new Date();
-    date.setDate(date.getDate() - 30);
-
-    let views = 1500;
-    let clicks = 120;
-    let conversions = 15;
-
-    for (let i = 0; i < 30; i++) {
-        data.push({
-            date: date.toLocaleDateString('ro-RO', { day: '2-digit', month: 'short' }),
-            views: Math.floor(views + (Math.random() * 500 - 200)),
-            clicks: Math.floor(clicks + (Math.random() * 50 - 20)),
-            conversions: Math.floor(conversions + (Math.random() * 10 - 4)),
-            spend: Math.floor(50 + (Math.random() * 20)),
-        });
-
-        // Add trend
-        views *= 1.02;
-        clicks *= 1.03;
-        conversions *= 1.05;
-        date.setDate(date.getDate() + 1);
-    }
-    return data;
-};
-
-const campaignPerformanceData = [
-    { name: 'Reduceri Primăvară', reach: 45000, engagement: 12000, roas: 3.5 },
-    { name: 'Lansare Produs X', reach: 85000, engagement: 34000, roas: 4.8 },
-    { name: 'Promo Weekend', reach: 25000, engagement: 5000, roas: 2.1 },
-    { name: 'Retargeting vizitatori', reach: 15000, engagement: 8000, roas: 5.2 },
-    { name: 'Brand Awareness', reach: 120000, engagement: 15000, roas: 1.8 },
+/** Aligned with campaign event types — demo metrics for Community Problems track */
+const EVENT_TYPE_IMPACT = [
+  { id: 'blood_donation', labelRo: 'Donare sânge', labelEn: 'Blood donation', reach: 128_400, actions: 920, color: '#ef4444', icon: '🩸' },
+  { id: 'hackathon', labelRo: 'Hackathon', labelEn: 'Hackathon', reach: 89_200, actions: 640, color: '#3b82f6', icon: '💻' },
+  { id: 'volunteering', labelRo: 'Voluntariat', labelEn: 'Volunteering', reach: 156_000, actions: 1180, color: '#22c55e', icon: '🤝' },
+  { id: 'marathon', labelRo: 'Maraton / cursă', labelEn: 'Marathon / run', reach: 72_300, actions: 510, color: '#0ea5e9', icon: '🏅' },
+  { id: 'charity', labelRo: 'Strângere fonduri', labelEn: 'Fundraising', reach: 95_100, actions: 780, color: '#eab308', icon: '💛' },
+  { id: 'education', labelRo: 'Educație', labelEn: 'Education', reach: 64_800, actions: 420, color: '#6366f1', icon: '📚' },
+  { id: 'community_gathering', labelRo: 'Adunări locale', labelEn: 'Local gatherings', reach: 41_500, actions: 290, color: '#f97316', icon: '🏘️' },
+  { id: 'other', labelRo: 'Alte cauze', labelEn: 'Other causes', reach: 52_000, actions: 360, color: '#a855f7', icon: '✨' },
 ];
 
+const TIME_SERIES = (() => {
+  const out: { day: string; reach: number; actions: number; shares: number; sentiment: number }[] = [];
+  let r = 4200,
+    a = 180,
+    s = 95,
+    sen = 72;
+  for (let i = 1; i <= 28; i++) {
+    r += Math.round(200 + Math.random() * 400);
+    a += Math.round(5 + Math.random() * 25);
+    s += Math.round(2 + Math.random() * 12);
+    sen = Math.min(94, Math.max(58, sen + (Math.random() * 6 - 2.5)));
+    out.push({
+      day: `Z${i}`,
+      reach: r,
+      actions: a,
+      shares: s,
+      sentiment: Math.round(sen),
+    });
+  }
+  return out;
+})();
+
+const RADAR_IMPACT = [
+  { dimRo: 'Conștientizare', dimEn: 'Awareness', a: 92, fullMark: 100 },
+  { dimRo: 'Mobilizare', dimEn: 'Mobilization', a: 88, fullMark: 100 },
+  { dimRo: 'Încredere', dimEn: 'Trust', a: 85, fullMark: 100 },
+  { dimRo: 'Viralitate', dimEn: 'Virality', a: 79, fullMark: 100 },
+  { dimRo: 'Retenție', dimEn: 'Retention', a: 81, fullMark: 100 },
+];
+
+const CITY_TOUCH = [
+  { city: 'București', lift: 100 },
+  { city: 'Cluj', lift: 86 },
+  { city: 'Timișoara', lift: 72 },
+  { city: 'Iași', lift: 68 },
+  { city: 'Constanța', lift: 54 },
+  { city: 'Național', lift: 91 },
+];
+
+const FUNNEL = [
+  { stageRo: 'Văzut mesajul', stageEn: 'Saw message', value: 100, fill: '#c4b5fd' },
+  { stageRo: 'Engagement', stageEn: 'Engaged', value: 68, fill: '#a78bfa' },
+  { stageRo: 'Intent acțiune', stageEn: 'Action intent', value: 42, fill: '#8b5cf6' },
+  { stageRo: 'Conversie cauză', stageEn: 'Cause conversion', value: 19, fill: '#6d28d9' },
+];
+
+type Lang = 'ro' | 'en';
+
 export default function Analytics() {
-    const [data, setData] = useState<any[]>([]);
-    const [timeframe, setTimeframe] = useState('30d');
+  const { language, toggleLanguage } = useLanguage();
+  const [tf, setTf] = useState<'7d' | '30d' | '90d'>('30d');
+  const lang: Lang = language === 'en' ? 'en' : 'ro';
 
-    useEffect(() => {
-        setData(generateMockData());
-    }, [timeframe]);
+  const t = lang === 'ro'
+    ? {
+        title: 'Impact comunitar',
+        subtitle: 'Analytics pentru track-ul Community Problems — mobilizare, conștientizare, acțiune.',
+        badge: 'ITFest 2026 · Community Problems',
+        kpis: [
+          { k: 'Acoperire conștientizare', v: '684K', d: '+24% vs. luna trecută', up: true },
+          { k: 'Acțiuni comunitare', v: '5.2K', d: 'înscrieri, donații, participări', up: true },
+          { k: 'Share-uri pentru cauză', v: '12.8K', d: 'amplificare organică', up: true },
+          { k: 'Orașe atinse', v: '42', d: 'prezență locală', up: true },
+        ],
+        time: 'Perioadă',
+        chart1: 'Mobilizare în timp',
+        chart1sub: 'Reach estimat + acțiuni generate (demo)',
+        chart2: 'Mix tipuri de campanii',
+        chart2sub: 'Distribuție pe tip eveniment comunitar',
+        chart3: 'Dimensiuni impact',
+        chart3sub: 'Scor normalizat (demo marketing)',
+        chart4: 'Lift pe oraș',
+        chart4sub: 'Index relativ vs. medie națională',
+        chart5: 'Funnel conștientizare → acțiune',
+        hackathon: 'Poveste pentru juriu',
+        hackathonBody:
+          'Campaia măsoară nu doar click-uri, ci semnale de mobilizare: voluntari, donatori, participanți la evenimente. Mai jos, totul e hardcodat pentru demo — în producție se leagă de campanii reale + TikTok insights.',
+      }
+    : {
+        title: 'Community impact',
+        subtitle: 'Analytics for the Community Problems track — awareness, mobilization, action.',
+        badge: 'ITFest 2026 · Community Problems',
+        kpis: [
+          { k: 'Awareness reach', v: '684K', d: '+24% vs last month', up: true },
+          { k: 'Community actions', v: '5.2K', d: 'sign-ups, donations, joins', up: true },
+          { k: 'Shares for good', v: '12.8K', d: 'organic amplification', up: true },
+          { k: 'Cities touched', v: '42', d: 'local presence', up: true },
+        ],
+        time: 'Range',
+        chart1: 'Mobilization over time',
+        chart1sub: 'Estimated reach + actions generated (demo)',
+        chart2: 'Campaign type mix',
+        chart2sub: 'Distribution by community event type',
+        chart3: 'Impact dimensions',
+        chart3sub: 'Normalized score (demo)',
+        chart4: 'Lift by city',
+        chart4sub: 'Relative index vs national average',
+        chart5: 'Awareness → action funnel',
+        hackathon: 'Pitch for judges',
+        hackathonBody:
+          'Campaia measures not just clicks but mobilization signals: volunteers, donors, event participants. Below is demo data — in production this ties to real campaigns + TikTok insights.',
+      };
 
-    const stats = [
-        {
-            title: 'Vizualizări Totale',
-            value: '2.4M',
-            change: '+15.2%',
-            isPositive: true,
-            icon: Eye,
-            color: 'text-blue-600',
-            bg: 'bg-blue-100'
-        },
-        {
-            title: 'Click-uri (CTR)',
-            value: '45.2K',
-            subValue: '1.8% CTR',
-            change: '+5.4%',
-            isPositive: true,
-            icon: MousePointerClick,
-            color: 'text-purple-600',
-            bg: 'bg-purple-100'
-        },
-        {
-            title: 'Cost per Acțiune (CPA)',
-            value: '12.5 RON',
-            change: '-2.1%',
-            isPositive: true, // Lower CPA is better
-            icon: DollarSign,
-            color: 'text-green-600',
-            bg: 'bg-green-100'
-        },
-        {
-            title: 'Distribuiri',
-            value: '8,432',
-            change: '-1.4%',
-            isPositive: false,
-            icon: Share2,
-            color: 'text-amber-600',
-            bg: 'bg-amber-100'
-        }
-    ];
+  const pieData = useMemo(
+    () =>
+      EVENT_TYPE_IMPACT.map((e) => ({
+        name: lang === 'ro' ? e.labelRo : e.labelEn,
+        value: e.reach,
+        actions: e.actions,
+        color: e.color,
+      })),
+    [lang],
+  );
 
-    const CustomTooltip = ({ active, payload, label }: any) => {
-        if (active && payload && payload.length) {
-            return (
-                <div className="bg-white p-4 rounded-xl shadow-xl border border-slate-100">
-                    <p className="font-bold text-slate-800 mb-2">{label}</p>
-                    {payload.map((entry: any, index: number) => (
-                        <div key={index} className="flex items-center gap-2 text-sm font-medium mt-1">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: entry.color }} />
-                            <span className="text-slate-600">{entry.name}:</span>
-                            <span className="font-bold whitespace-nowrap" style={{ color: entry.color }}>
-                                {entry.value.toLocaleString()}
-                            </span>
-                        </div>
-                    ))}
-                </div>
-            );
-        }
-        return null;
-    };
+  const radarData = useMemo(
+    () =>
+      RADAR_IMPACT.map((r) => ({
+        subject: lang === 'ro' ? r.dimRo : r.dimEn,
+        score: r.a,
+        fullMark: 100,
+      })),
+    [lang],
+  );
 
+  const funnelData = useMemo(
+    () =>
+      FUNNEL.map((f) => ({
+        name: lang === 'ro' ? f.stageRo : f.stageEn,
+        value: f.value,
+        fill: f.fill,
+      })),
+    [lang],
+  );
+
+  const TooltipBox = ({ active, payload, label }: { active?: boolean; payload?: { name?: string; value?: number; color?: string }[]; label?: string }) => {
+    if (!active || !payload?.length) return null;
     return (
-        <div className="max-w-7xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 pb-10">
-            {/* Header */}
-            <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-xl shadow-slate-200/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-50 rounded-full -mr-32 -mt-32 opacity-50 blur-2xl"></div>
-                <div className="relative z-10">
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-4">
-                        <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-600 text-white rounded-2xl shadow-lg shadow-purple-500/30">
-                            <TrendingUp size={32} />
-                        </div>
-                        Performanță Campanii
-                    </h1>
-                    <p className="text-slate-500 mt-2 text-lg font-medium">Analizează impactul și optimizează bugetul de marketing.</p>
-                </div>
-
-                <div className="relative z-10 flex bg-slate-100 p-1.5 rounded-2xl">
-                    {['7d', '30d', '90d'].map((t) => (
-                        <button
-                            key={t}
-                            onClick={() => setTimeframe(t)}
-                            className={`px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${timeframe === t
-                                    ? 'bg-white text-purple-600 shadow-sm'
-                                    : 'text-slate-500 hover:text-slate-700'
-                                }`}
-                        >
-                            {t.toUpperCase()}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Top Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {stats.map((stat, i) => (
-                    <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-lg shadow-slate-200/40 relative overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                        <div className="flex justify-between items-start mb-4">
-                            <div className={`p-3 rounded-xl ${stat.bg} ${stat.color}`}>
-                                <stat.icon size={24} />
-                            </div>
-                            <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${stat.isPositive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
-                                }`}>
-                                {stat.isPositive ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                                {stat.change}
-                            </span>
-                        </div>
-                        <h3 className="text-slate-500 font-medium text-sm">{stat.title}</h3>
-                        <div className="flex items-baseline gap-2 mt-1">
-                            <p className="text-3xl font-black text-slate-900 tracking-tight">{stat.value}</p>
-                            {stat.subValue && <p className="text-sm font-bold text-slate-400">{stat.subValue}</p>}
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Main Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Traffic Trend */}
-                <div className="lg:col-span-2 bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-lg shadow-slate-200/40">
-                    <div className="flex justify-between items-center mb-6">
-                        <div>
-                            <h3 className="text-xl font-black text-slate-900">Evoluție Trafic</h3>
-                            <p className="text-sm font-medium text-slate-500">Vizualizări și click-uri în timp</p>
-                        </div>
-                        <Activity className="text-purple-500 opacity-50" size={24} />
-                    </div>
-                    <div className="h-[350px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <defs>
-                                    <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                                    </linearGradient>
-                                    <linearGradient id="colorClicks" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#ec4899" stopOpacity={0.3} />
-                                        <stop offset="95%" stopColor="#ec4899" stopOpacity={0} />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis
-                                    dataKey="date"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#94a3b8', fontSize: 12 }}
-                                    dy={10}
-                                    minTickGap={30}
-                                />
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#94a3b8', fontSize: 12 }}
-                                    tickFormatter={(val) => `${val / 1000}k`}
-                                />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                <Area
-                                    type="monotone"
-                                    dataKey="views"
-                                    name="Vizualizări"
-                                    stroke="#8b5cf6"
-                                    strokeWidth={3}
-                                    fillOpacity={1}
-                                    fill="url(#colorViews)"
-                                />
-                                <Area
-                                    type="monotone"
-                                    dataKey="clicks"
-                                    name="Click-uri"
-                                    stroke="#ec4899"
-                                    strokeWidth={3}
-                                    fillOpacity={1}
-                                    fill="url(#colorClicks)"
-                                />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Conversion Funnel / Spend */}
-                <div className="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-lg shadow-slate-200/40">
-                    <div className="mb-6">
-                        <h3 className="text-xl font-black text-slate-900">Conversii vs Buget</h3>
-                        <p className="text-sm font-medium text-slate-500">Raport cost/eficiență</p>
-                    </div>
-                    <div className="h-[350px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="date" hide />
-                                <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                                <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />
-                                <Tooltip content={<CustomTooltip />} />
-                                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                                <Line
-                                    yAxisId="left"
-                                    type="monotone"
-                                    dataKey="conversions"
-                                    name="Conversii"
-                                    stroke="#10b981"
-                                    strokeWidth={3}
-                                    dot={false}
-                                    activeDot={{ r: 6, fill: '#10b981', strokeWidth: 0 }}
-                                />
-                                <Line
-                                    yAxisId="right"
-                                    type="monotone"
-                                    dataKey="spend"
-                                    name="Buget (RON)"
-                                    stroke="#f59e0b"
-                                    strokeWidth={3}
-                                    dot={false}
-                                    activeDot={{ r: 6, fill: '#f59e0b', strokeWidth: 0 }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
-
-            {/* Campaign Comparison */}
-            <div className="bg-white p-6 sm:p-8 rounded-[2rem] border border-slate-100 shadow-lg shadow-slate-200/40">
-                <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h3 className="text-xl font-black text-slate-900">Top Campanii Active</h3>
-                        <p className="text-sm font-medium text-slate-500">Comparație ROAS și Reach</p>
-                    </div>
-                    <button className="px-5 py-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-xl transition-colors text-sm">
-                        Vezi Raport Detaliat
-                    </button>
-                </div>
-
-                <div className="h-[400px] w-full mt-4">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                            data={campaignPerformanceData}
-                            layout="vertical"
-                            margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
-                            barSize={32}
-                        >
-                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                            <XAxis type="number" hide />
-                            <YAxis
-                                dataKey="name"
-                                type="category"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fill: '#475569', fontSize: 13, fontWeight: 600 }}
-                                width={160}
-                            />
-                            <Tooltip cursor={{ fill: '#f8fafc' }} content={<CustomTooltip />} />
-                            <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
-                            <Bar dataKey="reach" name="Reach total" fill="#6366f1" radius={[0, 8, 8, 0]} />
-                            <Bar dataKey="engagement" name="Engagement" fill="#a855f7" radius={[0, 8, 8, 0]} />
-                        </BarChart>
-                    </ResponsiveContainer>
-                </div>
-            </div>
-
-        </div>
+      <div className="rounded-xl border border-slate-200 bg-white/95 px-3 py-2 text-sm shadow-lg backdrop-blur">
+        <div className="font-bold text-slate-800">{label}</div>
+        {payload.map((p, i) => (
+          <div key={i} className="text-slate-600">
+            {p.name}: <span className="font-semibold text-slate-900">{typeof p.value === 'number' ? p.value.toLocaleString() : p.value}</span>
+          </div>
+        ))}
+      </div>
     );
+  };
+
+  return (
+    <div className="min-h-0 w-full max-w-[1600px] mx-auto space-y-8 pb-24 pt-2 px-1 sm:px-0">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="relative overflow-hidden rounded-[2rem] border border-violet-200/60 bg-gradient-to-br from-violet-50 via-white to-emerald-50 p-6 sm:p-10 shadow-xl"
+      >
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-violet-300/30 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 left-1/4 h-48 w-48 rounded-full bg-emerald-300/20 blur-3xl" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <span className="mb-3 inline-flex items-center gap-2 rounded-full bg-violet-600 px-3 py-1 text-xs font-black uppercase tracking-wider text-white">
+              <Sparkles className="h-3.5 w-3.5" />
+              {t.badge}
+            </span>
+            <h1 className="flex flex-wrap items-center gap-3 text-3xl font-black tracking-tight text-slate-900 sm:text-4xl">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-emerald-500 text-white shadow-lg">
+                <Heart className="h-6 w-6" fill="currentColor" fillOpacity={0.3} />
+              </span>
+              {t.title}
+            </h1>
+            <p className="mt-2 max-w-2xl text-base font-medium text-slate-600">{t.subtitle}</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => toggleLanguage()}
+              className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-2 text-xs font-black uppercase text-slate-700 shadow-sm hover:bg-slate-50"
+            >
+              {lang === 'ro' ? 'EN' : 'RO'}
+            </button>
+            <div className="flex rounded-2xl border border-slate-200 bg-white/80 p-1 shadow-sm">
+              {(['7d', '30d', '90d'] as const).map((x) => (
+                <button
+                  key={x}
+                  type="button"
+                  onClick={() => setTf(x)}
+                  className={`rounded-xl px-4 py-2 text-xs font-black ${tf === x ? 'bg-slate-900 text-white' : 'text-slate-500'}`}
+                >
+                  {x}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* KPI row */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {t.kpis.map((k, i) => (
+          <motion.div
+            key={k.k}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.05 }}
+            className="rounded-3xl border border-slate-100 bg-white p-6 shadow-lg shadow-slate-200/50"
+          >
+            <div className="flex items-start justify-between">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{k.k}</p>
+              {k.up && (
+                <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-600">
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                  live demo
+                </span>
+              )}
+            </div>
+            <p className="mt-2 text-3xl font-black text-slate-900">{k.v}</p>
+            <p className="mt-1 text-sm text-slate-500">{k.d}</p>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Story card */}
+      <div className="rounded-3xl border border-emerald-100 bg-emerald-50/50 p-6 sm:p-8">
+        <div className="flex gap-4">
+          <Target className="h-10 w-10 shrink-0 text-emerald-600" />
+          <div>
+            <h3 className="text-lg font-black text-slate-900">{t.hackathon}</h3>
+            <p className="mt-2 text-slate-700 leading-relaxed">{t.hackathonBody}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Charts grid */}
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-2">
+        {/* Wide area chart */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="xl:col-span-2 rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg sm:p-8"
+        >
+          <div className="mb-4 flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-xl font-black text-slate-900">{t.chart1}</h3>
+              <p className="text-sm text-slate-500">{t.chart1sub}</p>
+            </div>
+            <Activity className="h-8 w-8 text-violet-400" />
+          </div>
+          <div className="h-[340px] w-full min-h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={TIME_SERIES} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gA" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="left" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                <Tooltip content={<TooltipBox />} />
+                <Legend />
+                <Area yAxisId="left" type="monotone" dataKey="reach" name={lang === 'ro' ? 'Reach cumulat' : 'Cumulative reach'} stroke="#7c3aed" fill="url(#gR)" strokeWidth={2} />
+                <Area yAxisId="right" type="monotone" dataKey="actions" name={lang === 'ro' ? 'Acțiuni' : 'Actions'} stroke="#059669" fill="url(#gA)" strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* Pie */}
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg sm:p-8">
+          <div className="mb-4 flex items-center gap-2">
+            <Megaphone className="h-6 w-6 text-violet-500" />
+            <div>
+              <h3 className="text-lg font-black text-slate-900">{t.chart2}</h3>
+              <p className="text-xs text-slate-500">{t.chart2sub}</p>
+            </div>
+          </div>
+          <div className="h-[320px] w-full min-h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={2} label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}>
+                  {pieData.map((_, i) => (
+                    <Cell key={i} fill={EVENT_TYPE_IMPACT[i]?.color ?? '#94a3b8'} />
+                  ))}
+                </Pie>
+                <Tooltip content={<TooltipBox />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Radar */}
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg sm:p-8">
+          <div className="mb-4 flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-emerald-500" />
+            <div>
+              <h3 className="text-lg font-black text-slate-900">{t.chart3}</h3>
+              <p className="text-xs text-slate-500">{t.chart3sub}</p>
+            </div>
+          </div>
+          <div className="h-[320px] w-full min-h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="75%">
+                <PolarGrid stroke="#e2e8f0" />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#64748b' }} />
+                <Radar name="score" dataKey="score" stroke="#7c3aed" fill="#8b5cf6" fillOpacity={0.45} strokeWidth={2} />
+                <Tooltip content={<TooltipBox />} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Cities bar */}
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg sm:p-8">
+          <div className="mb-4 flex items-center gap-2">
+            <MapPin className="h-6 w-6 text-rose-500" />
+            <div>
+              <h3 className="text-lg font-black text-slate-900">{t.chart4}</h3>
+              <p className="text-xs text-slate-500">{t.chart4sub}</p>
+            </div>
+          </div>
+          <div className="h-[300px] w-full min-h-[240px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={CITY_TOUCH} layout="vertical" margin={{ left: 8 }} barSize={18}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                <XAxis type="number" domain={[0, 110]} tick={{ fontSize: 10 }} />
+                <YAxis type="category" dataKey="city" width={88} tick={{ fontSize: 11, fontWeight: 600 }} axisLine={false} tickLine={false} />
+                <Tooltip content={<TooltipBox />} />
+                <Bar dataKey="lift" name="Index" fill="#f43f5e" radius={[0, 8, 8, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Funnel + line sentiment */}
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg sm:p-8">
+          <div className="mb-4 flex items-center gap-2">
+            <Users className="h-6 w-6 text-amber-500" />
+            <div>
+              <h3 className="text-lg font-black text-slate-900">{t.chart5}</h3>
+            </div>
+          </div>
+          <div className="h-[280px] w-full min-h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={funnelData} margin={{ top: 8, right: 8, left: 8, bottom: 32 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#64748b' }} interval={0} angle={-12} textAnchor="end" height={60} />
+                <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} axisLine={false} tickLine={false} />
+                <Tooltip content={<TooltipBox />} />
+                <Bar dataKey="value" radius={[8, 8, 0, 0]}>
+                  {funnelData.map((e, i) => (
+                    <Cell key={i} fill={e.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-lg sm:p-8">
+          <div className="mb-4 flex items-center gap-2">
+            <Share2 className="h-6 w-6 text-sky-500" />
+            <div>
+              <h3 className="text-lg font-black text-slate-900">{lang === 'ro' ? 'Sentiment & share-uri' : 'Sentiment & shares'}</h3>
+              <p className="text-xs text-slate-500">{lang === 'ro' ? 'Demo — corelație pozitivă' : 'Demo — positive correlation'}</p>
+            </div>
+          </div>
+          <div className="h-[280px] w-full min-h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={TIME_SERIES} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                <XAxis dataKey="day" tick={{ fontSize: 9 }} hide />
+                <YAxis yAxisId="L" tick={{ fontSize: 10 }} domain={['auto', 'auto']} />
+                <YAxis yAxisId="R" orientation="right" tick={{ fontSize: 10 }} domain={[50, 100]} />
+                <Tooltip content={<TooltipBox />} />
+                <Legend />
+                <Line yAxisId="L" type="monotone" dataKey="shares" name={lang === 'ro' ? 'Share-uri' : 'Shares'} stroke="#0ea5e9" strokeWidth={2} dot={false} />
+                <Line yAxisId="R" type="monotone" dataKey="sentiment" name={lang === 'ro' ? 'Sentiment index' : 'Sentiment index'} stroke="#f59e0b" strokeWidth={2} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom CTA strip */}
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-5 text-white shadow-xl">
+        <div className="flex items-center gap-3">
+          <TrendingUp className="h-8 w-8 opacity-90" />
+          <div>
+            <p className="font-black">{lang === 'ro' ? 'Următorul pas: campanie nouă' : 'Next step: new campaign'}</p>
+            <p className="text-sm text-violet-100">{lang === 'ro' ? 'Alege tipul de eveniment comunitar și măsoară impactul.' : 'Pick a community event type and measure impact.'}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

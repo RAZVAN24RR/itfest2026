@@ -19,6 +19,7 @@ import CampaignDetails from './dashboard/CampaignDetails';
 import Integrations from './dashboard/Integrations';
 import CommunityMap from './dashboard/CommunityMap';
 import CampaiaAgent from './dashboard/CampaiaAgent';
+import Analytics from './dashboard/Analytics';
 import targetingService from '../services/targetingService';
 import { useUser } from '../context/UserContext';
 
@@ -246,7 +247,7 @@ export default function Dashboard() {
                     </div>
                 </aside>
 
-                <main className="flex-1 p-4 sm:p-10 overflow-y-auto pb-32 lg:pb-10 relative">
+                <main className="flex-1 min-h-0 min-w-0 p-4 sm:p-10 overflow-y-auto overflow-x-hidden pb-32 lg:pb-10 relative">
                     {isLoading && (
                         <div className="absolute inset-0 bg-white/40 z-50 flex items-center justify-center backdrop-blur-md">
                             <div className="bg-white p-6 rounded-3xl shadow-2xl border border-slate-100 flex flex-col items-center gap-4">
@@ -276,7 +277,7 @@ export default function Dashboard() {
 
                         {activePage === 'billing' && (<Billing />)}
                         {activePage === 'buyTokens' && (<BuyTokens />)}
-                        {activePage === 'analytics' && (<></>)}
+                        {activePage === 'analytics' && <Analytics />}
                         {activePage === 'videos' && (
                             <MyVideos
                                 userCredits={wallet?.balance ?? 0}
