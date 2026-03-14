@@ -1,6 +1,7 @@
 ====================================================================
 CAMPAIA — AI pentru Mobilizarea Comunităților (ITFest 2026)
 Ce s-a implementat până acum — Rezumat complet
+Ultima actualizare: 14 Martie 2026 (sync cu repo main, push pe origin)
 ====================================================================
 
 ## DESCRIERE GENERALĂ
@@ -37,220 +38,106 @@ Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă,
 - Kling AI — API extern pentru generare video (text-to-video, image-to-video)
 - AWS S3 — Stocare obiecte (LocalStack pentru dev)
 - Stripe — Procesare plăți (sistem de tokeni)
-- TikTok Ads API — Publicare campanii pe TikTok
+- TikTok Ads API — Publicare campanii (sandbox sau production)
 
 ### Infrastructură
-- Docker Compose — Orchestrare locală (PostgreSQL, Redis, Backend, Frontend, LocalStack)
-- Health checks configurate pe toate serviciile
+- Docker Compose — PostgreSQL, Redis, Backend, Frontend, LocalStack
+- Health checks pe servicii
+- Pornire locală: ./scripts/dev-start.sh (sau docker compose up -d)
+- Regulă Cursor (.cursor/rules/dev-workflow.mdc): după modificări utile — Docker live + commit-uri mici
 
 ====================================================================
 ## FUNCȚIONALITĂȚI IMPLEMENTATE (DETALIAT)
 ====================================================================
 
 ### 1. AUTENTIFICARE & MANAGEMENT UTILIZATORI
-- Login cu email + parolă (cu hash bcrypt)
-- Login cu Google OAuth (înregistrare/autentificare automată)
-- JWT tokens pentru sesiuni persistente (utilizatorul rămâne logat și după refresh)
-- Redirect automat la dashboard după login
-- Route-uri API protejate cu JWT
-- Pagini: Signin, Signup, Landing Page
-- Tipuri de utilizator: INDIVIDUAL și BUSINESS
-- Profil complet cu câmpuri business: CUI, Reg. Com., adresă, oraș, județ, țară
-- Flag de "profile completed"
+- Login email + parolă (bcrypt), Google OAuth, JWT persistent
+- Route-uri API protejate; redirect dashboard după login
+- Tipuri: INDIVIDUAL, BUSINESS (CUI, Reg. Com., adresă, oraș, județ, țară)
+- Flag profile completed
 
 ### 2. SISTEM DE CAMPANII
-- CRUD complet pentru campanii (creare, citire, actualizare, ștergere)
-- Status tracking: DRAFT → ACTIVE → PAUSED → COMPLETED / CANCELLED
-- Tranziții de stare validate (activate, pause, resume)
-- Câmpuri: nume campanie, URL destinație, buget, durată, descriere produs, oraș (city), coordonate (lat, lng)
-- Script AI atașat campaniei
-- Tracking tokeni consumați per campanie
-- Paginare pe lista de campanii
-- Filtrare după status
-- Pagini dashboard: Overview, Campaign Details, New Campaign, History
+- CRUD complet; status: DRAFT → ACTIVE → PAUSED → COMPLETED / CANCELLED
+- Câmpuri: nume, URL destinație, buget, durată, descriere, city, lat, lng
+- Script AI, tokeni per campanie, paginare, filtrare status
+- Pagini: Overview, Campaign Details, New Campaign, History
 
-### 3. GENERARE CONȚINUT AI (via Ollama)
-- Generare scripturi video (pentru TikTok) — multiple variante (5 by default)
-- Suport pentru tonuri: profesional, casual, viral, funny
-- Generare în limba utilizatorului (detecție automată RO/EN)
-- Generare hashtag-uri relevante
-- Sugestii de audiență țintă (demographic recommendations)
-- Generare descrieri marketing "punchline"
-- Generare prompt-uri cinematice pentru Kling AI
-- Verificare disponibilitate Ollama
+### 3. GENERARE CONȚINUT AI (Ollama)
+- Scripturi TikTok (5 variante default), tonuri (profesional, casual, viral, funny)
+- RO/EN, hashtag-uri, audiență, punchline, prompturi Kling
+- Health Ollama
 
-### 4. GENERARE VIDEO AI (via Kling AI)
-- Generare video din text (text-to-video)
-- Generare video din imagine (image-to-video)
-- Workflow async complet: creare job → apel Kling API → polling → download → upload S3 → update DB
-- Calități video: STANDARD, PROFESSIONAL
-- Durată video: SHORT (5s), MEDIUM (10s)
-- Aspect ratio configurabil
-- Upload manual de video-uri (din galerie/cameră)
-- Ștergere video (din DB + S3)
-- Editare titlu video
-- My Videos — galerie personală cu toate videourile utilizatorului
-- Community Feed — feed public cu videourile tuturor utilizatorilor
-- VideoGenerator component — interfață de generare
-- VideoPreview modal — preview video cu detalii
-- VideoThumbnail component — thumbnail vizual
-- VideoUpload component — upload de video
+### 4. GENERARE VIDEO (Kling + S3)
+- Text-to-video, image-to-video, job async, upload S3, galerie
+- My Videos, Community Feed; VideoGenerator, Gallery, Upload, Preview
 
-### 5. SISTEM DE TOKENI & PLĂȚI (Stripe)
-- Wallet per utilizator (balanță + lifetime purchased)
-- Tranzacții: PURCHASE, SPEND, REFUND
-- Acțiuni token: PURCHASE, BONUS, SCRIPT, IMAGE, VIDEO
-- Pachete de tokeni (Stripe checkout):
-  • Starter Pack: 100 tokeni — 29 RON
-  • Standard Pack: 300 tokeni — 79 RON
-  • Pro Pack: 700 tokeni — 149 RON
-  • Business Pack: 1500 tokeni — 299 RON
-- Checkout Stripe cu redirect (success/cancel)
-- Webhook Stripe pentru confirmare plată
-- Mock mode când Stripe key lipsește
-- Pagini: BuyTokens, PaymentSuccess, PaymentCancel
-- TokenBalance component — afișare balanță
-- Billing page — detalii billing
+### 5. TOKENI & STRIPE
+- Wallet, pachete (Starter 100/29 RON … Business 1500/299 RON)
+- Checkout, webhook, mock fără key; BuyTokens, Billing
 
 ### 6. FACTURARE
-- Generare automată facturi după plata Stripe
-- Număr factură unic: CMP-YYYY-XXXX
-- PDF generat server-side (PDFService)
-- Upload PDF pe S3
-- Download factură prin URL presemnat S3
-- Trimitere factură pe email
-- Istoric facturi per utilizator
-- Suport tip factură și status
-- Componente: InvoiceList, InvoiceDownloadButton
+- Facturi CMP-YYYY-XXXX, PDF, S3, email, InvoiceList
 
 ### 7. AUDIENCE TARGETING
-- Model AudienceTarget atașat campaniei
-- Selector demografic (vârstă min/max, gen)
-- Selector geografic (locații)
-- Interese disponibile (lista statică RO/EN)
-- Validare criterii targeting
-- SimpleTargetingSelector — interfață simplificată de targeting
-- DemographicSelector, GeoSelector — componente dedicate
+- AudienceTarget; DemographicSelector, GeoSelector, SimpleTargetingSelector
 
-### 8. INTEGRARE TIKTOK ADS (+ Sandbox)
-- Ghid rapid: docs/TIKTOK_SANDBOX.md (env, flux publicare, verificare Ads Manager)
-
-### 8b. INTEGRARE TIKTOK ADS (detaliu)
-- Client TikTok API complet implementat
-- Publisher TikTok Ads (creare campanie → ad group → ad)
-- API routes pentru TikTok
-- Câmpuri pe campanie: tiktok_ad_id, tiktok_campaign_id, tiktok_adgroup_id
-- Suport sandbox/production
-- Pagina Integrations pe dashboard
+### 8. TIKTOK ADS (SANDBOX / PRODUCTION)
+- Client + publisher: upload video URL → campanie TikTok → ad group → ad
+- API: /api/v1/tiktok/status, /publish, pause/resume, campaigns list, metrics (restrict)
+- Campanie: tiktok_campaign_id, tiktok_adgroup_id, tiktok_ad_id
+- Publicare din Campaign Details: necesită video cu URL public (S3); buton activ doar cu video_url
+- Env backend (.env + docker-compose): TIKTOK_ACCESS_TOKEN, TIKTOK_ADVERTISER_ID, TIKTOK_APP_ID, TIKTOK_APP_SECRET, TIKTOK_ENVIRONMENT (sandbox|production), TIKTOK_METRICS_ADMIN_EMAILS (listă emailuri pentru GET /tiktok/metrics)
+- Documentație flux sandbox: docs/TIKTOK_SANDBOX.md
+- Pagina Integrations: status cont, Campaign Explorer (campanii din API), checklist publicare sandbox; metrici globale doar pentru admini (restul vede mesaj, fără erori în UI)
 
 ### 9. ANALYTICS DASHBOARD
-- Pagina Analytics cu grafice de performanță
-- Vizualizare: views, clicks, CPA, shares
-- Selectare timeframe pentru date
-- Comparare campanii (reach și ROAS)
-- Grafice: line, area, bar charts
+- Recharts: views, clicks, CPA, shares; timeframe; comparare campanii (reach / ROAS)
 
-### 10. HARTA COMUNITARĂ (WOW Factor)
-- Pagina Dashboard → Community Map
-- Harta interactivă (Leaflet) cu toți markerii campaniilor active
-- Vizualizare impact global: Reach Estimat Total, Număr campanii active
-- Filtre avansate: după categorie (Donare de sânge, Reciclare, etc.) și după oraș
-- Pop-up-uri detaliate per campanie: Titlu, Categorie, Target, Reach, Video Link
-- Posibilitatea de a alege orașul de publicare per campanie (București, Cluj, Timișoara, Iași, Constanța, Brașov, etc.)
-- Salvarea coordonatelor (lat, lng) în baza de date pentru plasare precisă pe hartă
-- Filtrare dinamică pe hartă în funcție de orașele selectate de utilizatori
+### 10. COMMUNITY MAP
+- Leaflet, markere campanii active, filtre categorie/oraș, lat/lng, pop-up-uri
 
-### 11. PAGINI FRONTEND IMPLEMENTATE
-- Landing Page — pagină de prezentare
-- Signin / Signup — autentificare
-- Concept Page — pagina de concept
-- Privacy & Terms — politici
-- Dashboard (cu sub-pagini):
-  • Overview — view general
-  • New Campaign — creare campanie (pagină complexă, ~59KB)
-  • Campaign Details — detalii campanie (editare nume, URL, oraș/locație) (~45KB)
-  • My Videos — galeria de videouri
-  • Analytics — grafice și metrici
-  • Billing — facturi și plăți
-  • Buy Tokens — achiziție tokeni
-  • History — istoric campanii
-  • Integrations — integrări (TikTok)
-  • Profile — profil utilizator (cu ProfileTypeSelector)
-  • Settings — setări
-  • Community Map — hartă interactivă campanii (NEW)
+### 11. PAGINI FRONTEND
+- Landing, Concept, Privacy, Terms, Signin/Signup
+- Dashboard: Overview, New Campaign, Campaign Details, My Videos, Analytics, Billing, Buy Tokens, History, Integrations, Profile, Settings, Community Map
 
-### 11. COMPONENTE UI
-- Navbar (cu sub-componente)
-- Footer (rebranded pentru hackathon — fără referințe academice)
-- CommunityFeed — feed public video
-- CreditCardPreview — preview card plată
-- Notification system
-- TokenBalance — balanță tokeni
-- ProfileTypeSelector — selectare tip profil (individual/business)
-- Video components: VideoGallery, VideoGenerator, VideoPreviewModal, VideoThumbnail, VideoUpload
-- Billing components: InvoiceList, InvoiceDownloadButton
-- Targeting components: DemographicSelector, GeoSelector, SimpleTargetingSelector
+### 12. COMPONENTE UI (esențial)
+- Navbar, Footer (hackathon, fără referințe academice), CommunityFeed, TokenBalance, ProfileTypeSelector
+- Video / Billing / Targeting — ca mai sus
 
-### 12. CONTEXT & STATE MANAGEMENT
-- LanguageContext — suport multi-limbă (RO/EN)
-- UserContext — date utilizator global
-- Custom hooks
+### 13. SERVICII FRONTEND
+- api.ts, aiService, campaignService, paymentService, targetingService, tiktokService, videoService
 
-### 13. SERVICII FRONTEND (API Layer)
-- api.ts — client HTTP de bază (cu JWT interceptors)
-- aiService.ts — apeluri AI
-- campaignService.ts — CRUD campanii
-- paymentService.ts — plăți Stripe
-- targetingService.ts — targeting
-- tiktokService.ts — integrare TikTok
-- videoService.ts — video management
+### 14. MODELE DB
+- User, Campaign, Wallet, TokenTransaction, VideoGeneration, AudienceTarget, Invoice
 
-### 14. BAZĂ DE DATE (Modele)
-- User (email, parolă, Google ID, profil, câmpuri business)
-- Campaign (detalii campanie, AI content, TikTok IDs, video, city, lat, lng)
-- Wallet (balanță tokeni)
-- TokenTransaction (istoric tranzacții)
-- VideoGeneration (job-uri generare video, status, URL-uri)
-- AudienceTarget (demografice, geo, interese)
-- Invoice (facturi, status, PDF URL)
-
-### 15. INFRASTRUCTURĂ & DEVOPS
-- Docker Compose cu 5 servicii: PostgreSQL, Redis, Backend, Frontend, LocalStack
-- Hot reload pe backend și frontend
-- Dockerfile-uri separate pentru dev și prod
-- Scripts de dev (dev-start.sh)
-- Health check endpoints (/health, /ready, /api/v1/health)
-- CORS configurat
-- Environment variables management (.env, .env.example)
+### 15. DEVOPS
+- docker-compose; .env.example actualizat (TikTok + TIKTOK_METRICS_ADMIN_EMAILS)
+- Health: /health, /ready
 
 ====================================================================
-## CE NU E ÎNCĂ IMPLEMENTAT / PARȚIAL
+## CE NU E ÎNCĂ / PARȚIAL
 ====================================================================
 
-- Meta Ads — cartonașe "Coming Soon" în Integrations, CampaignDetails, LandingPage (Q3 2026)
-- Google Ads — cartonașe "Coming Soon" în Integrations, CampaignDetails, LandingPage (Q4 2026)
-  (ambele sunt la nivel de idee/UI, funcțional rămâne TikTok sandbox)
-- Predicții reach și engagement (menționată în README, posibil doar UI mockup)
-
-- Email service — structura există dar funcționalitatea e limitată
-- Sistem de notificări real-time (componentă UI există, dar fără WebSocket/push)
-- Tests — directorul există dar e gol
-- Verificare conectivitate DB la /ready endpoint (TODO în cod)
+- Meta Ads / Google Ads — UI Coming Soon (Q3/Q4 2026), fără backend
+- AI Impact Prediction (reach) — parțial / mock posibil
+- Email — limitat; notificări real-time — fără WebSocket
+- Tests — directoare goale sau minime
+- /ready — verificare DB opțională (TODO vechi)
 
 ====================================================================
-## DIRECȚIE MULTI-PLATFORM (NOU ADĂUGAT)
+## URMĂTORII PAȚI (PRODUS)
 ====================================================================
 
-Proiectul are acum o viziune multi-platform:
-- TikTok Ads: FUNCȚIONAL (sandbox) — singura integrare activă
-- Meta Ads (Facebook, Instagram, Reels, Stories): COMING SOON — UI prezent, fără backend
-- Google Ads (YouTube, Search, Display, Shopping): COMING SOON — UI prezent, fără backend
+1. Publicare stabilă pe TikTok Sandbox (token + advertiser + video HTTPS)
+2. AI Impact Prediction / demo polish
+3. Community Feed îmbunătățit
+4. WebSocket progres video (opțional)
 
-Această direcție e reflectată în:
-- Landing Page: titlul "Social Ads, Simplificate" + secțiune "Platforme Suportate"
-- Integrations Hub: card-uri dedicate Meta & Google cu timeline estimat
-- Campaign Details: secțiune "Alte Platforme" cu badge-uri Coming Soon
-- New Campaign: subtitlul Audience Targeting menționează Meta & Google
-- README și PROJECT_CONTEXT: actualizate cu viziunea multi-platform
+====================================================================
+## DIRECȚIE MULTI-PLATFORM
+====================================================================
+
+- TikTok: integrare activă (sandbox)
+- Meta / Google: UI roadmap, fără publisher încă
 
 ====================================================================
