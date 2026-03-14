@@ -153,7 +153,7 @@ class Settings(BaseSettings):
     # Email / SMTP
     # ============================================
     mail_from: str = Field(default="noreply@campaia.com", description="Sender email address")
-    mail_from_name: str = Field(default="DEVDELTA SRL", description="Sender name")
+    mail_from_name: str = Field(default="CAMPAIA SRL", description="Sender name")
     smtp_host: str = Field(default="localhost", description="SMTP host")
     smtp_port: int = Field(default=1025, description="SMTP port (1025 for MailHog)")
     smtp_user: str = Field(default="", description="SMTP username")

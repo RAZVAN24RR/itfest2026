@@ -102,8 +102,8 @@ class PDFService:
         
         # Seller Details (Campaia)
         seller_lines = [
-            "<b>DEVDELTA SRL</b>",
-            "CUI: RO45678901 | Reg. Com.: J40/1234/2023",
+            "<b>CAMPAIA SRL</b>",
+            "CUI: RO12345678 | Reg. Com.: J40/5678/2025",
             "Adresa: Str. Inovatiei nr. 10, Bucuresti",
             "Email: billing@campaia.com | Web: campaia.com"
         ]

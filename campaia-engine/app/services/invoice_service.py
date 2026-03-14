@@ -190,7 +190,7 @@ class InvoiceService:
                 <br>
                 <p>Spor la creat campanii!</p>
                 <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                <p style="font-size: 12px; color: #999;">Echipa DEVDELTA SRL</p>
+                <p style="font-size: 12px; color: #999;">Echipa CAMPAIA SRL</p>
             </body>
         </html>
         """
