@@ -25,6 +25,7 @@ from app.schemas.tiktok import (
     TikTokPauseResumeResponse,
     TikTokAccountBalance,
 )
+from app.core.config import settings
 from app.services.tiktok import tiktok_client, tiktok_ad_publisher
 
 logger = logging.getLogger(__name__)
@@ -374,7 +375,12 @@ async def get_tiktok_metrics(
     """
     Get aggregated metrics for the advertiser account.
     """
-    if current_user.email != "razvanandreipasaran@gmail.com":
+    allowed = {
+        e.strip().lower()
+        for e in settings.tiktok_metrics_admin_emails.split(",")
+        if e.strip()
+    }
+    if allowed and current_user.email.lower() not in allowed:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admin can view TikTok metrics",

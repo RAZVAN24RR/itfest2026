@@ -117,6 +117,10 @@ class Settings(BaseSettings):
     tiktok_access_token: str = Field(default="", description="TikTok access token for Campaia account")
     tiktok_advertiser_id: str = Field(default="", description="TikTok advertiser ID for Campaia account")
     tiktok_environment: str = Field(default="sandbox", description="TikTok environment: sandbox or production")
+    tiktok_metrics_admin_emails: str = Field(
+        default="razvanandreipasaran@gmail.com",
+        description="Comma-separated emails allowed to call GET /tiktok/metrics (same as before if unset)",
+    )
 
     # ============================================
     # AWS / S3

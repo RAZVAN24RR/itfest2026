@@ -89,6 +89,7 @@ services:
       TIKTOK_ACCESS_TOKEN: ${TIKTOK_ACCESS_TOKEN:-}
       TIKTOK_ADVERTISER_ID: ${TIKTOK_ADVERTISER_ID:-}
       TIKTOK_ENVIRONMENT: ${TIKTOK_ENVIRONMENT:-sandbox}
+      TIKTOK_METRICS_ADMIN_EMAILS: ${TIKTOK_METRICS_ADMIN_EMAILS:-razvanandreipasaran@gmail.com}
 
       # Ollama (Local AI)
       OLLAMA_URL: http://localhost:11434
