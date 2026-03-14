@@ -62,7 +62,7 @@ Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă,
 - CRUD complet pentru campanii (creare, citire, actualizare, ștergere)
 - Status tracking: DRAFT → ACTIVE → PAUSED → COMPLETED / CANCELLED
 - Tranziții de stare validate (activate, pause, resume)
-- Câmpuri: nume campanie, URL destinație, buget, durată, descriere produs
+- Câmpuri: nume campanie, URL destinație, buget, durată, descriere produs, oraș (city), coordonate (lat, lng)
 - Script AI atașat campaniei
 - Tracking tokeni consumați per campanie
 - Paginare pe lista de campanii
@@ -165,7 +165,7 @@ Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă,
 - Dashboard (cu sub-pagini):
   • Overview — view general
   • New Campaign — creare campanie (pagină complexă, ~59KB)
-  • Campaign Details — detalii campanie (editare nume, URL) (~45KB)
+  • Campaign Details — detalii campanie (editare nume, URL, oraș/locație) (~45KB)
   • My Videos — galeria de videouri
   • Analytics — grafice și metrici
   • Billing — facturi și plăți
@@ -178,7 +178,7 @@ Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă,
 
 ### 11. COMPONENTE UI
 - Navbar (cu sub-componente)
-- Footer
+- Footer (rebranded pentru hackathon — fără referințe academice)
 - CommunityFeed — feed public video
 - CreditCardPreview — preview card plată
 - Notification system
@@ -204,7 +204,7 @@ Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă,
 
 ### 14. BAZĂ DE DATE (Modele)
 - User (email, parolă, Google ID, profil, câmpuri business)
-- Campaign (detalii campanie, AI content, TikTok IDs, video)
+- Campaign (detalii campanie, AI content, TikTok IDs, video, city, lat, lng)
 - Wallet (balanță tokeni)
 - TokenTransaction (istoric tranzacții)
 - VideoGeneration (job-uri generare video, status, URL-uri)
