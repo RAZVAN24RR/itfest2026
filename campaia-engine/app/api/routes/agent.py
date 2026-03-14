@@ -178,12 +178,14 @@ async def agent_chat(
         },
     }
 
-    # Only IDs that support generateContent on v1beta (no -latest aliases; they 404)
+    # Order: prefer stable 2.5 Flash (ListModels), then 2.0, then aliases / lite
     models_to_try = [
-        settings.gemini_model.strip() or "gemini-2.0-flash",
+        settings.gemini_model.strip() or "gemini-2.5-flash",
+        "gemini-2.5-flash",
         "gemini-2.0-flash",
-        "gemini-1.5-flash-002",
-        "gemini-1.5-pro-002",
+        "gemini-flash-latest",
+        "gemini-2.5-flash-lite",
+        "gemini-2.0-flash-001",
     ]
     seen = set()
     models_to_try = [m for m in models_to_try if m and not (m in seen or seen.add(m))]
@@ -206,10 +208,14 @@ async def agent_chat(
                         logger.warning("Gemini empty candidates model=%s %s", model_id, last_err)
                         continue
                     parts = (cands[0].get("content") or {}).get("parts") or []
-                    if not parts or not parts[0].get("text"):
-                        last_err = "Empty model reply"
+                    reply_text = None
+                    for p in parts:
+                        if isinstance(p, dict) and p.get("text"):
+                            reply_text = p["text"]
+                            break
+                    if not reply_text:
+                        last_err = "Empty model reply (thinking-only parts?)"
                         continue
-                    reply_text = parts[0]["text"]
                     break
                 # Parse Google error body
                 try:
