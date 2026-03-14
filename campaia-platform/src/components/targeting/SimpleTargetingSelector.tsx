@@ -10,12 +10,20 @@
  * - Countries: Requires specific location IDs
  */
 
-import { Globe, Users, UserCheck } from 'lucide-react';
+import { Globe, Users, UserCheck, MapPin } from 'lucide-react';
 
 // TikTok Location IDs for supported countries
-// Source: TikTok Marketing API
 export const TIKTOK_COUNTRIES = [
     { code: 'RO', id: '642', name: 'România', nameEn: 'Romania', flag: '🇷🇴' },
+    { code: 'DE', id: '276', name: 'Germania', nameEn: 'Germany', flag: '🇩🇪' },
+    { code: 'FR', id: '250', name: 'Franța', nameEn: 'France', flag: '🇫🇷' },
+    { code: 'IT', id: '380', name: 'Italia', nameEn: 'Italy', flag: '🇮🇹' },
+    { code: 'ES', id: '724', name: 'Spania', nameEn: 'Spain', flag: '🇪🇸' },
+    { code: 'GB', id: '826', name: 'Marea Britanie', nameEn: 'United Kingdom', flag: '🇬🇧' },
+    { code: 'US', id: '840', name: 'SUA', nameEn: 'United States', flag: '🇺🇸' },
+    { code: 'NL', id: '528', name: 'Olanda', nameEn: 'Netherlands', flag: '🇳🇱' },
+    { code: 'PL', id: '616', name: 'Polonia', nameEn: 'Poland', flag: '🇵🇱' },
+    { code: 'AT', id: '040', name: 'Austria', nameEn: 'Austria', flag: '🇦🇹' },
 ];
 
 // TikTok Age Groups - these are the ONLY options TikTok supports
@@ -27,8 +35,13 @@ export const TIKTOK_AGE_GROUPS = [
     { id: 'AGE_55_100', label: '55+', labelEn: '55+', emoji: '🌟' },
 ];
 
-// TikTok Gender options
-// Romanian Cities for Community Map
+export const TIKTOK_GENDERS = [
+    { id: 'GENDER_UNLIMITED', label: 'Toți', labelEn: 'Everyone', icon: '👥' },
+    { id: 'GENDER_MALE', label: 'Bărbați', labelEn: 'Men', icon: '👨' },
+    { id: 'GENDER_FEMALE', label: 'Femei', labelEn: 'Women', icon: '👩' },
+];
+
+// Romanian Cities for Community Map (shown only when RO is selected)
 export const ROMANIAN_CITIES = [
     { name: 'București', lat: 44.4268, lng: 26.1025, emoji: '🏛️' },
     { name: 'Cluj-Napoca', lat: 46.7712, lng: 23.5901, emoji: '🎓' },
@@ -46,6 +59,8 @@ export interface SimpleTargetingData {
     countries: string[];
     ageGroups: string[];
     gender: string;
+    cities?: string[];
+    /** @deprecated use cities[] instead */
     city?: string;
     lat?: number;
     lng?: number;
@@ -64,36 +79,60 @@ export default function SimpleTargetingSelector({
     lang,
     disabled = false
 }: SimpleTargetingSelectorProps) {
-    const texts = {
-        ro: {
-            countries: 'România',
-            countriesHint: '',
-            age: 'Grupe de Vârstă',
-            ageHint: 'Alege categoriile de vârstă țintă',
-            gender: 'Gen',
-            genderHint: 'Cui vrei să i se afișeze',
-            allAges: 'Toate grupele',
-            note: '⚡ Aceste setări NU pot fi modificate după publicare',
-            city: 'Oraș (Harta Comunitară)',
-            cityHint: 'Alege orașul principal pentru a apărea pe harta comunității',
-            selectCity: 'Selectează orașul'
-        },
-        en: {
-            countries: 'Romania',
-            countriesHint: '',
-            age: 'Age Groups',
-            ageHint: 'Choose target age categories',
-            gender: 'Gender',
-            genderHint: 'Who should see your ad',
-            allAges: 'All age groups',
-            note: '⚡ These settings CANNOT be changed after publishing',
-            city: 'City (Community Map)',
-            cityHint: 'Choose the main city to appear on the community map',
-            selectCity: 'Select city'
-        }
+    const t = lang === 'ro' ? {
+        countries: 'Țări',
+        countriesHint: 'Selectează unde vrei să fie văzută campania',
+        age: 'Grupe de Vârstă',
+        ageHint: 'Alege categoriile de vârstă țintă',
+        gender: 'Gen',
+        genderHint: 'Cui vrei să i se afișeze',
+        allAges: 'Toate grupele',
+        note: '⚡ Aceste setări NU pot fi modificate după publicare',
+        cities: 'Orașe (Harta Comunitară)',
+        citiesHint: 'Selectează orașele unde se desfășoară campania',
+    } : {
+        countries: 'Countries',
+        countriesHint: 'Select where you want your campaign to be seen',
+        age: 'Age Groups',
+        ageHint: 'Choose target age categories',
+        gender: 'Gender',
+        genderHint: 'Who should see your ad',
+        allAges: 'All age groups',
+        note: '⚡ These settings CANNOT be changed after publishing',
+        cities: 'Cities (Community Map)',
+        citiesHint: 'Select the cities where the campaign takes place',
     };
 
-    const t = lang === 'ro' ? texts.ro : texts.en;
+    const toggleCountry = (code: string) => {
+        if (disabled) return;
+        const newCountries = value.countries.includes(code)
+            ? value.countries.filter(c => c !== code)
+            : [...value.countries, code];
+        const finalCountries = newCountries.length > 0 ? newCountries : ['RO'];
+
+        // If RO was removed, clear cities
+        const roStillSelected = finalCountries.includes('RO');
+        const newCities = roStillSelected ? (value.cities || []) : [];
+
+        onChange({ ...value, countries: finalCountries, cities: newCities });
+    };
+
+    const toggleCity = (cityName: string) => {
+        if (disabled) return;
+        const currentCities = value.cities || [];
+        const newCities = currentCities.includes(cityName)
+            ? currentCities.filter(c => c !== cityName)
+            : [...currentCities, cityName];
+
+        const firstCity = newCities.length > 0 ? ROMANIAN_CITIES.find(c => c.name === newCities[0]) : null;
+        onChange({
+            ...value,
+            cities: newCities,
+            city: newCities[0] || undefined,
+            lat: firstCity?.lat,
+            lng: firstCity?.lng,
+        });
+    };
 
     const toggleAgeGroup = (id: string) => {
         if (disabled) return;
@@ -113,20 +152,9 @@ export default function SimpleTargetingSelector({
         onChange({ ...value, gender });
     };
 
-    const setCity = (cityName: string) => {
-        if (disabled) return;
-        const cityObj = ROMANIAN_CITIES.find(c => c.name === cityName);
-        if (cityObj) {
-            onChange({
-                ...value,
-                city: cityObj.name,
-                lat: cityObj.lat,
-                lng: cityObj.lng
-            });
-        }
-    };
-
     const allAgesSelected = value.ageGroups.length === TIKTOK_AGE_GROUPS.length;
+    const roSelected = value.countries.includes('RO');
+    const selectedCities = value.cities || [];
 
     return (
         <div className="space-y-6">
@@ -135,12 +163,59 @@ export default function SimpleTargetingSelector({
                 <span>{t.note}</span>
             </div>
 
-            {/* Country — Romania only */}
-            <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-center gap-3">
-                <span className="text-lg">🇷🇴</span>
-                <span className="text-sm font-bold text-purple-800">{lang === 'ro' ? 'România' : 'Romania'}</span>
-                <span className="text-[10px] text-purple-500 font-medium uppercase tracking-widest ml-auto">{lang === 'ro' ? 'Țara implicită' : 'Default country'}</span>
+            {/* Countries */}
+            <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-purple-600" />
+                    <label className="text-sm font-bold text-slate-700">{t.countries}</label>
+                </div>
+                <p className="text-xs text-slate-400">{t.countriesHint}</p>
+                <div className="flex flex-wrap gap-2">
+                    {TIKTOK_COUNTRIES.map(country => (
+                        <button
+                            key={country.code}
+                            type="button"
+                            onClick={() => toggleCountry(country.code)}
+                            disabled={disabled}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${value.countries.includes(country.code)
+                                ? 'border-purple-500 bg-purple-50 text-purple-700'
+                                : 'border-slate-100 hover:border-slate-300 text-slate-600'
+                                } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        >
+                            <span>{country.flag}</span>
+                            <span>{lang === 'ro' ? country.name : country.nameEn}</span>
+                        </button>
+                    ))}
+                </div>
             </div>
+
+            {/* Romanian Cities — only when RO is selected */}
+            {roSelected && (
+                <div className="space-y-3 pl-4 border-l-4 border-purple-200">
+                    <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-orange-500" />
+                        <label className="text-sm font-bold text-slate-700">{t.cities}</label>
+                    </div>
+                    <p className="text-xs text-slate-400">{t.citiesHint}</p>
+                    <div className="flex flex-wrap gap-2">
+                        {ROMANIAN_CITIES.map(city => (
+                            <button
+                                key={city.name}
+                                type="button"
+                                onClick={() => toggleCity(city.name)}
+                                disabled={disabled}
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${selectedCities.includes(city.name)
+                                    ? 'border-orange-500 bg-orange-50 text-orange-700'
+                                    : 'border-slate-100 hover:border-slate-300 text-slate-600'
+                                    } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                <span>{city.emoji}</span>
+                                <span>{city.name}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {/* Age Groups */}
             <div className="space-y-3">
@@ -206,42 +281,9 @@ export default function SimpleTargetingSelector({
                     ))}
                 </div>
             </div>
-
-            {/* City Selection for Map */}
-            <div className="space-y-3 pt-4 border-t border-slate-100">
-                <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-orange-500" />
-                    <label className="text-sm font-bold text-slate-700">{t.city}</label>
-                </div>
-                <p className="text-xs text-slate-400">{t.cityHint}</p>
-                <div className="flex flex-wrap gap-2">
-                    {ROMANIAN_CITIES.map(city => (
-                        <button
-                            key={city.name}
-                            type="button"
-                            onClick={() => setCity(city.name)}
-                            disabled={disabled}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${value.city === city.name
-                                ? 'border-orange-500 bg-orange-50 text-orange-700'
-                                : 'border-slate-100 hover:border-slate-300 text-slate-600'
-                                } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                            <span>{city.emoji}</span>
-                            <span>{city.name}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
         </div>
     );
 }
-
-// Re-export TIKTOK_GENDERS since it's used elsewhere but was removed in replace
-export const TIKTOK_GENDERS = [
-    { id: 'GENDER_UNLIMITED', label: 'Toți', labelEn: 'Everyone', icon: '👥' },
-    { id: 'GENDER_MALE', label: 'Bărbați', labelEn: 'Men', icon: '👨' },
-    { id: 'GENDER_FEMALE', label: 'Femei', labelEn: 'Women', icon: '👩' },
-];
 
 // Helper to convert SimpleTargetingData to TikTok API format
 export function toTikTokTargeting(data: SimpleTargetingData): {
@@ -263,6 +305,7 @@ export function formatTargetingDisplay(data: SimpleTargetingData, lang: 'ro' | '
     countries: string;
     ages: string;
     gender: string;
+    cities: string;
 } {
     const countriesDisplay = data.countries
         .map(code => TIKTOK_COUNTRIES.find(c => c.code === code)?.flag || code)
@@ -274,9 +317,14 @@ export function formatTargetingDisplay(data: SimpleTargetingData, lang: 'ro' | '
 
     const genderDisplay = TIKTOK_GENDERS.find(g => g.id === data.gender)?.[lang === 'ro' ? 'label' : 'labelEn'] || 'All';
 
+    const citiesDisplay = (data.cities && data.cities.length > 0)
+        ? data.cities.join(', ')
+        : (lang === 'ro' ? 'Toate' : 'All');
+
     return {
         countries: countriesDisplay,
         ages: agesDisplay,
-        gender: genderDisplay
+        gender: genderDisplay,
+        cities: citiesDisplay,
     };
 }

@@ -25,13 +25,14 @@ import {
     Share2,
     Music,
     X,
-    Video
+    Video,
+    MapPin
 } from 'lucide-react';
 import campaignService, { type Campaign, CampaignStatus } from '../../services/campaignService';
 import targetingService, { type AudienceTarget } from '../../services/targetingService';
 import videoService, { type VideoListItem } from '../../services/videoService';
 import tiktokService from '../../services/tiktokService';
-import SimpleTargetingSelector, { TIKTOK_COUNTRIES, TIKTOK_AGE_GROUPS, TIKTOK_GENDERS, toTikTokTargeting } from '../../components/targeting/SimpleTargetingSelector';
+import SimpleTargetingSelector, { TIKTOK_COUNTRIES, TIKTOK_AGE_GROUPS, TIKTOK_GENDERS, ROMANIAN_CITIES, toTikTokTargeting } from '../../components/targeting/SimpleTargetingSelector';
 import VideoGallery from '../../components/VideoGallery';
 
 interface CampaignDetailsProps {
@@ -444,11 +445,45 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                                         <span>{lang === 'ro' ? 'Targetarea nu poate fi modificată după publicarea pe TikTok' : 'Targeting cannot be modified after publishing to TikTok'}</span>
                                     </div>
 
-                                    {/* Country — Romania */}
-                                    <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-center gap-3">
-                                        <span className="text-lg">🇷🇴</span>
-                                        <span className="text-sm font-bold text-purple-800">{lang === 'ro' ? 'România' : 'Romania'}</span>
+                                    {/* Countries Display */}
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <Globe size={14} className="text-purple-600" />
+                                            <span className="text-sm font-bold text-slate-600">{lang === 'ro' ? 'Țări' : 'Countries'}</span>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            {((targeting as any).location_ids || (targeting as any).countries || ['RO']).map((id: string) => {
+                                                const country = TIKTOK_COUNTRIES.find(c => c.id === id || c.code === id);
+                                                return (
+                                                    <span key={id} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-50 border border-purple-200 text-purple-700 text-sm font-medium">
+                                                        <span>{country?.flag || '🌍'}</span>
+                                                        <span>{country ? (lang === 'ro' ? country.name : country.nameEn) : id}</span>
+                                                    </span>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
+
+                                    {/* Cities Display (if Romania) */}
+                                    {((targeting as any).cities?.length > 0) && (
+                                        <div className="space-y-3 pl-4 border-l-4 border-purple-200">
+                                            <div className="flex items-center gap-2">
+                                                <MapPin size={14} className="text-orange-500" />
+                                                <span className="text-sm font-bold text-slate-600">{lang === 'ro' ? 'Orașe' : 'Cities'}</span>
+                                            </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                {((targeting as any).cities as string[]).map((name: string) => {
+                                                    const city = ROMANIAN_CITIES.find(c => c.name === name);
+                                                    return (
+                                                        <span key={name} className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 text-sm font-medium">
+                                                            <span>{city?.emoji || '📍'}</span>
+                                                            <span>{name}</span>
+                                                        </span>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* Age Groups Display */}
                                     <div className="space-y-3">

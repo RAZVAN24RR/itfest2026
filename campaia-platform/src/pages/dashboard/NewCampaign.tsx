@@ -7,7 +7,7 @@ import paymentService from "../../services/paymentService";
 import VideoGenerator from '../../components/VideoGenerator';
 import VideoGallery from '../../components/VideoGallery';
 import type { VideoListItem, VideoStatusResponse } from '../../services/videoService';
-import SimpleTargetingSelector, { type SimpleTargetingData, TIKTOK_AGE_GROUPS, toTikTokTargeting } from '../../components/targeting/SimpleTargetingSelector';
+import SimpleTargetingSelector, { type SimpleTargetingData, TIKTOK_AGE_GROUPS, TIKTOK_COUNTRIES, toTikTokTargeting } from '../../components/targeting/SimpleTargetingSelector';
 
 interface NewCampaignProps {
     onPublish: (data: CampaignData) => void;
@@ -69,7 +69,8 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
                 ...formData,
                 aiScript: scriptVariants[selectedVariantIndex] || formData.aiScript,
                 targeting: toTikTokTargeting(targetingData),  // Convert to TikTok format
-                city: targetingData.city,
+                city: targetingData.cities?.join(', ') || targetingData.city,
+                cities: targetingData.cities,
                 lat: targetingData.lat,
                 lng: targetingData.lng
             });
@@ -767,7 +768,7 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
                                         </div>
                                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t.s5.labelTargeting}</h4>
                                         <div className="space-y-1">
-                                            <p className="text-[10px] font-black text-slate-900 uppercase truncate">🇷🇴 România</p>
+                                            <p className="text-[10px] font-black text-slate-900 uppercase truncate">{targetingData.countries?.map(c => TIKTOK_COUNTRIES.find(tc => tc.code === c)?.flag || c).join(' ')} {targetingData.countries?.map(c => TIKTOK_COUNTRIES.find(tc => tc.code === c)?.[lang === 'ro' ? 'name' : 'nameEn'] || c).join(', ')}</p>
                                             <p className="text-[9px] font-bold text-slate-400 uppercase">{targetingData.ageGroups?.length === 5 ? 'All ages' : targetingData.ageGroups?.length + ' groups'} • {targetingData.gender?.replace('GENDER_', '')}</p>
                                         </div>
                                     </div>

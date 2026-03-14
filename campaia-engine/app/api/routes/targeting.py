@@ -63,7 +63,18 @@ async def validate_targeting(
 @router.get("/locations/countries")
 async def get_countries(language: str = "en"):
     """Get list of supported countries."""
-    return [{"code": "RO", "name": "Romania" if language == "en" else "România"}]
+    return [
+        {"code": "RO", "name": "Romania" if language == "en" else "România"},
+        {"code": "DE", "name": "Germany" if language == "en" else "Germania"},
+        {"code": "FR", "name": "France" if language == "en" else "Franța"},
+        {"code": "IT", "name": "Italy" if language == "en" else "Italia"},
+        {"code": "ES", "name": "Spain" if language == "en" else "Spania"},
+        {"code": "GB", "name": "United Kingdom" if language == "en" else "Marea Britanie"},
+        {"code": "US", "name": "United States" if language == "en" else "SUA"},
+        {"code": "NL", "name": "Netherlands" if language == "en" else "Olanda"},
+        {"code": "PL", "name": "Poland" if language == "en" else "Polonia"},
+        {"code": "AT", "name": "Austria"},
+    ]
 
 @router.get("/locations/regions")
 async def get_regions(country: str, language: str = "en"):
