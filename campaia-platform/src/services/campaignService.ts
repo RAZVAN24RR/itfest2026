@@ -25,6 +25,9 @@ export interface Campaign {
     tiktok_campaign_id: string | null;
     video_url: string | null;
     video_id: string | null;
+    lat: number | null;
+    lng: number | null;
+    city: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -34,6 +37,9 @@ export interface CreateCampaignData {
     budget?: number;
     product_desc?: string;
     name?: string;
+    lat?: number;
+    lng?: number;
+    city?: string;
 }
 
 export interface UpdateCampaignData {
@@ -43,6 +49,9 @@ export interface UpdateCampaignData {
     product_desc?: string | null;
     ai_script?: string | null;
     status?: CampaignStatus | null;
+    lat?: number | null;
+    lng?: number | null;
+    city?: string | null;
 }
 
 export interface CampaignListResponse {
@@ -58,6 +67,17 @@ export interface CampaignFilters {
     per_page?: number;
     status?: CampaignStatus;
     search?: string;
+}
+
+export interface CampaignMapMarker {
+    id: string;
+    title: string;
+    lat: number;
+    lng: number;
+    city?: string;
+    category: string;
+    estimated_reach: number;
+    video_url: string | null;
 }
 
 /**
@@ -154,6 +174,14 @@ export const updateScript = async (id: string, data: CampaignScriptUpdate): Prom
     });
 };
 
+/**
+ * Get map markers
+ */
+export const getMapMarkers = async (): Promise<CampaignMapMarker[]> => {
+    return apiRequest<CampaignMapMarker[]>('/api/v1/campaigns/map');
+};
+
+
 export default {
     getCampaigns,
     getCampaign,
@@ -164,4 +192,5 @@ export default {
     resumeCampaign,
     activateCampaign,
     updateScript,
+    getMapMarkers,
 };

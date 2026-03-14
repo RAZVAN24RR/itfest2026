@@ -10,6 +10,9 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
+    optimizeDeps: {
+        include: ['leaflet', 'react-leaflet'],
+    },
     test: {
         globals: true,
         environment: 'jsdom',

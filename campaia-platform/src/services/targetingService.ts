@@ -16,6 +16,9 @@ export interface AudienceTarget {
     location_ids?: string[];
     age_groups?: string[];
     gender?: string;
+    city?: string;
+    lat?: number;
+    lng?: number;
 }
 
 export interface Location {

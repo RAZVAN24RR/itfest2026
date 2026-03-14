@@ -161,8 +161,18 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                     setTargeting({
                         countries: countryCodes,
                         ageGroups: tData.age_groups || ['AGE_18_24', 'AGE_25_34'],
-                        gender: tData.gender || 'GENDER_UNLIMITED'
+                        gender: tData.gender || 'GENDER_UNLIMITED',
+                        city: c.city || undefined,
+                        lat: c.lat || undefined,
+                        lng: c.lng || undefined
                     } as any);
+                } else if (tData) {
+                    setTargeting({
+                        ...tData,
+                        city: c.city || undefined,
+                        lat: c.lat || undefined,
+                        lng: c.lng || undefined
+                    });
                 }
             } catch (err) {
                 console.error("Failed to fetch targeting", err);
@@ -203,7 +213,10 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
             await campaignService.updateCampaign(campaignId, {
                 name,
                 url,
-                budget
+                budget,
+                city: (targeting as any)?.city,
+                lat: (targeting as any)?.lat,
+                lng: (targeting as any)?.lng
             });
 
             if (targeting && campaign && !campaign.tiktok_campaign_id) {

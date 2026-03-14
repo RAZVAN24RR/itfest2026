@@ -20,6 +20,9 @@ class CampaignBase(BaseModel):
     budget: Decimal = Field(default=Decimal("50.00"), ge=10, le=10000)
     duration: int = Field(default=7, ge=1, le=365)
     product_desc: str | None = Field(None, max_length=5000)
+    lat: float | None = None
+    lng: float | None = None
+    city: str | None = Field(None, max_length=100)
 
 
 class CampaignCreate(CampaignBase):
@@ -41,6 +44,9 @@ class CampaignUpdate(BaseModel):
     status: CampaignStatus | None = None
     video_id: UUID | None = None
     video_url: str | None = None
+    lat: float | None = None
+    lng: float | None = None
+    city: str | None = Field(None, max_length=100)
 
 
 class CampaignResponse(BaseModel):
@@ -61,6 +67,9 @@ class CampaignResponse(BaseModel):
     tiktok_campaign_id: str | None = None
     video_url: str | None = None
     video_id: UUID | None = None
+    lat: float | None = None
+    lng: float | None = None
+    city: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -88,4 +97,18 @@ class CampaignScriptUpdate(BaseModel):
 
     ai_script: str = Field(..., min_length=1, max_length=10000)
     tokens_spent: int = Field(default=5, ge=0)
+
+
+class CampaignMapMarker(BaseModel):
+    """Schema for campaign map display."""
+    
+    id: UUID
+    title: str
+    lat: float
+    lng: float
+    city: str | None = None
+    category: str
+    estimated_reach: int
+    video_url: str | None = None
+
 

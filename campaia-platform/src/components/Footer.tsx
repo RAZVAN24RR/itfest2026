@@ -1,28 +1,27 @@
-import {Sparkles} from "lucide-react";
-import {Link} from "react-router-dom";
-import {useLanguage} from "../context/LanguageContext.tsx";
+import { Sparkles } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useLanguage } from "../context/LanguageContext.tsx";
 
 
-export default function Footer()
-{
+export default function Footer() {
     const languageContext = useLanguage();
     const language = languageContext ? languageContext.language : 'en';
 
     const content = {
-        ro:{
+        ro: {
             terms: "Termeni și Condiții",
             privacy: "Politica de Confidențialitate",
-            f: "© 2025 Campaia Project. Lucrare de Licență."
+            f: "© 2026 Campaia. Toate drepturile rezervate."
         },
-        en:{
+        en: {
             terms: "Terms of Service",
             privacy: "Privacy Policy",
-            f: "© 2025 Campaia Project. Bachelor's Thesis."
+            f: "© 2026 Campaia. All rights reserved."
         }
     }
     const text = content[language as keyof typeof content] || content.en;
 
-    return(
+    return (
         <footer className="bg-white py-12 border-t border-slate-50">
             <div className="mx-auto max-w-7xl px-6 text-center lg:px-8">
                 <div className="flex justify-center items-center gap-2 mb-4">
@@ -32,7 +31,7 @@ export default function Footer()
                     <span className="font-bold text-xl text-blue-950 tracking-tight">Campaia</span>
                 </div>
                 <p className="text-sm text-slate-400 font-medium">
-                   {text.f}
+                    {text.f}
                 </p>
                 <div className="mt-8 flex flex-wrap justify-center gap-x-8 gap-y-4">
                     <Link to="/terms" className="text-sm font-semibold text-slate-400 hover:text-purple-600 transition-colors">{text.terms}</Link>

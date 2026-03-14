@@ -147,7 +147,17 @@ Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă,
 - Comparare campanii (reach și ROAS)
 - Grafice: line, area, bar charts
 
-### 10. PAGINI FRONTEND IMPLEMENTATE
+### 10. HARTA COMUNITARĂ (WOW Factor)
+- Pagina Dashboard → Community Map
+- Harta interactivă (Leaflet) cu toți markerii campaniilor active
+- Vizualizare impact global: Reach Estimat Total, Număr campanii active
+- Filtre avansate: după categorie (Donare de sânge, Reciclare, etc.) și după oraș
+- Pop-up-uri detaliate per campanie: Titlu, Categorie, Target, Reach, Video Link
+- Posibilitatea de a alege orașul de publicare per campanie (București, Cluj, Timișoara, Iași, Constanța, Brașov, etc.)
+- Salvarea coordonatelor (lat, lng) în baza de date pentru plasare precisă pe hartă
+- Filtrare dinamică pe hartă în funcție de orașele selectate de utilizatori
+
+### 11. PAGINI FRONTEND IMPLEMENTATE
 - Landing Page — pagină de prezentare
 - Signin / Signup — autentificare
 - Concept Page — pagina de concept
@@ -164,6 +174,7 @@ Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă,
   • Integrations — integrări (TikTok)
   • Profile — profil utilizator (cu ProfileTypeSelector)
   • Settings — setări
+  • Community Map — hartă interactivă campanii (NEW)
 
 ### 11. COMPONENTE UI
 - Navbar (cu sub-componente)
@@ -216,8 +227,8 @@ Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă,
 - Meta Ads — cartonașe "Coming Soon" în Integrations, CampaignDetails, LandingPage (Q3 2026)
 - Google Ads — cartonașe "Coming Soon" în Integrations, CampaignDetails, LandingPage (Q4 2026)
   (ambele sunt la nivel de idee/UI, funcțional rămâne TikTok sandbox)
-- Harta interactivă a campaniilor active (menționată în README, neimplementată)
 - Predicții reach și engagement (menționată în README, posibil doar UI mockup)
+
 - Email service — structura există dar funcționalitatea e limitată
 - Sistem de notificări real-time (componentă UI există, dar fără WebSocket/push)
 - Tests — directorul există dar e gol

@@ -1,8 +1,8 @@
 import { LayoutDashboard, PlusCircle, Receipt, User, Camera } from 'lucide-react';
 
 interface MobileBottomNavProps {
-    activePage: 'overview' | 'new' | 'settings' | 'analytics' | 'billing' | 'profile' | 'buyTokens' | 'videos' | 'details' | 'integrations';
-    setActivePage: (page: 'overview' | 'new' | 'settings' | 'analytics' | 'billing' | 'profile' | 'buyTokens' | 'videos' | 'details' | 'integrations') => void;
+    activePage: 'overview' | 'new' | 'settings' | 'analytics' | 'billing' | 'profile' | 'buyTokens' | 'videos' | 'details' | 'integrations' | 'communityMap';
+    setActivePage: (page: 'overview' | 'new' | 'settings' | 'analytics' | 'billing' | 'profile' | 'buyTokens' | 'videos' | 'details' | 'integrations' | 'communityMap') => void;
 }
 
 export default function MobileBottomNav({ activePage, setActivePage }: MobileBottomNavProps) {

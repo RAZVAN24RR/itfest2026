@@ -652,8 +652,15 @@ class TikTokClient:
             "page_size": 100,
         }
         
-        result = await self._request("GET", "/report/integrated/get/", params=params)
-        return result.get("data", {})
+        try:
+            result = await self._request("GET", "/report/integrated/get/", params=params)
+            return result.get("data", {})
+        except RuntimeError as e:
+            # TikTok Sandbox does not support integrated reports (error 40009)
+            # We catch it and return empty data to prevent 500 errors in dashboard
+            if "40009" in str(e) and self._environment == TikTokEnvironment.SANDBOX:
+                return {"list": [], "page_info": {"page": 1, "page_size": 100, "total_number": 0, "total_page": 0}}
+            raise e
 
     # ==========================================
     # TARGETING HELPERS

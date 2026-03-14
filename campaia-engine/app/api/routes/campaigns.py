@@ -17,6 +17,7 @@ from app.schemas.campaign import (
     CampaignResponse,
     CampaignScriptUpdate,
     CampaignUpdate,
+    CampaignMapMarker,
 )
 from app.services.campaign_service import (
     CampaignNotFoundError,
@@ -73,6 +74,19 @@ async def list_campaigns(
     return await service.list_campaigns(
         user, status=status_filter, page=page, per_page=per_page
     )
+
+
+@router.get(
+    "/map",
+    response_model=list[CampaignMapMarker],
+    summary="Get campaign map markers",
+)
+async def get_campaign_map(
+    db: DbSession,
+) -> list[CampaignMapMarker]:
+    """Get all campaigns mapped for the community map."""
+    service = CampaignService(db)
+    return await service.get_map_markers()
 
 
 @router.get(

@@ -13,7 +13,7 @@ export default function Terms() {
     const content = {
         ro: {
             headerTitle: "Termeni și Condiții",
-            headerSub: "Ultima actualizare: 29 Noiembrie 2025",
+            headerSub: "Ultima actualizare: 14 Martie 2026",
             backLink: "Înapoi Acasă",
             sections: [
                 {
@@ -44,7 +44,7 @@ export default function Terms() {
         },
         en: {
             headerTitle: "Terms of Service",
-            headerSub: "Last Updated: November 29, 2025",
+            headerSub: "Last Updated: March 14, 2026",
             backLink: "Back to Home",
             sections: [
                 {

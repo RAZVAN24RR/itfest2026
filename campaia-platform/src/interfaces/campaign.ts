@@ -11,4 +11,7 @@ export interface CampaignData {
     isActive?: boolean;
     videoId?: string;
     targeting?: any;
+    city?: string;
+    lat?: number;
+    lng?: number;
 }

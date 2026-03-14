@@ -68,7 +68,10 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
             await onPublish({
                 ...formData,
                 aiScript: scriptVariants[selectedVariantIndex] || formData.aiScript,
-                targeting: toTikTokTargeting(targetingData)  // Convert to TikTok format
+                targeting: toTikTokTargeting(targetingData),  // Convert to TikTok format
+                city: targetingData.city,
+                lat: targetingData.lat,
+                lng: targetingData.lng
             });
             setShowSuccess(true);
         } catch (error) {

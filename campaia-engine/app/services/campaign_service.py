@@ -18,6 +18,7 @@ from app.schemas.campaign import (
     CampaignListResponse,
     CampaignResponse,
     CampaignUpdate,
+    CampaignMapMarker,
 )
 
 
@@ -63,6 +64,9 @@ class CampaignService:
             budget=data.budget,
             duration=data.duration,
             product_desc=data.product_desc,
+            lat=data.lat,
+            lng=data.lng,
+            city=data.city,
             status=CampaignStatus.DRAFT.value,
         )
 
@@ -126,6 +130,54 @@ class CampaignService:
             per_page=per_page,
             pages=pages,
         )
+
+    async def get_map_markers(self) -> list[CampaignMapMarker]:
+        """Get all campaigns formatted as map markers with deterministic mock locations."""
+        campaigns, _ = await self.repo.get_all_campaigns()
+        
+        markers = []
+        for c in campaigns:
+            # Deterministic mock data based on ID
+            id_str = str(c.id)
+            seed = sum(ord(char) for char in id_str)
+            
+            # Categories based on content or random for demo
+            categories = ["Blood Donation", "Recycling", "Education", "Community Event", "Charity"]
+            category = categories[seed % len(categories)]
+            
+            # Use real data if available
+            if c.lat is not None and c.lng is not None:
+                lat = float(c.lat)
+                lng = float(c.lng)
+                city_name = c.city or "Unknown"
+            else:
+                # Fallback to deterministic mock data
+                cities = [
+                    (44.4268, 26.1025, "București"),
+                    (46.7712, 23.5901, "Cluj-Napoca"),
+                    (45.7489, 21.2087, "Timișoara"),
+                    (47.1585, 27.5681, "Iași"),
+                    (44.1598, 28.6348, "Constanța"),
+                ]
+                city_lat, city_lng, city_name = cities[seed % len(cities)]
+                lat = city_lat + (seed % 100) * 0.001 - 0.05
+                lng = city_lng + (seed % 100) * 0.001 - 0.05
+            
+            title = c.name or f"Campaign in {city_name}"
+            estimated_reach = int(c.budget) * 100 + (seed % 500)
+            
+            markers.append(CampaignMapMarker(
+                id=c.id,
+                title=title,
+                lat=lat,
+                lng=lng,
+                city=city_name,
+                category=category,
+                estimated_reach=estimated_reach,
+                video_url=c.video_url
+            ))
+            
+        return markers
 
     async def update_campaign(
         self, user: User, campaign_id: uuid.UUID, data: CampaignUpdate

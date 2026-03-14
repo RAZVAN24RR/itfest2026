@@ -86,6 +86,24 @@ class CampaignRepository:
 
         return campaigns, total
 
+    async def get_all_campaigns(self) -> tuple[Sequence[Campaign], int]:
+        """
+        Get all campaigns across the platform (for community map).
+        
+        Returns:
+            Tuple of (campaigns, total_count)
+        """
+        query = select(Campaign).order_by(Campaign.created_at.desc())
+        count_query = select(func.count()).select_from(Campaign)
+
+        result = await self.db.execute(query)
+        campaigns = result.scalars().all()
+
+        count_result = await self.db.execute(count_query)
+        total = count_result.scalar() or 0
+
+        return campaigns, total
+
     async def update(self, campaign: Campaign) -> Campaign:
         """Update an existing campaign."""
         await self.db.commit()

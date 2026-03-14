@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutDashboard, PlusCircle, Settings as SettingsIcon, Sparkles, BarChart3, Receipt, UserCircle, Coins, Plus, Video, Share2 } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Settings as SettingsIcon, Sparkles, BarChart3, Receipt, UserCircle, Coins, Plus, Video, Share2, Map } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import Notification, { type NotificationType } from "../components/Notification.tsx";
@@ -17,6 +17,7 @@ import BuyTokens from './dashboard/BuyTokens';
 import MyVideos from './dashboard/MyVideos';
 import CampaignDetails from './dashboard/CampaignDetails';
 import Integrations from './dashboard/Integrations';
+import CommunityMap from './dashboard/CommunityMap';
 import targetingService from '../services/targetingService';
 import { useUser } from '../context/UserContext';
 
@@ -24,7 +25,7 @@ export default function Dashboard() {
     const { language } = useLanguage();
     const { user } = useUser();
     const isAdmin = user?.email === 'razvanandreipasaran@gmail.com';
-    const [activePage, setActivePage] = useState<'overview' | 'new' | 'settings' | 'analytics' | 'billing' | 'profile' | 'buyTokens' | 'videos' | 'details' | 'integrations'>('overview');
+    const [activePage, setActivePage] = useState<'overview' | 'new' | 'settings' | 'analytics' | 'billing' | 'profile' | 'buyTokens' | 'videos' | 'details' | 'integrations' | 'communityMap'>('overview');
     const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null);
 
     // State now holds API campaigns, but we might want to keep using CampaignData for compatibility with children for now,
@@ -40,8 +41,8 @@ export default function Dashboard() {
     });
 
     const sidebarTexts = {
-        ro: { overview: "Privire Generală", new: "Campanie Nouă", settings: "Setări", analytics: "Analitice", billing: "Plata", profile: "Profilul Meu", soon: "SOON", tip: "Bugetele > 100 RON au +40% șanse.", created: "Campania a fost creată cu succes!", paused: "Campania a fost pusă pe pauză.", reopened: "Campania a fost repornită.", deleted: "Campania a fost ștearsă.", tokens: "Tokens", buyTokens: "Cumpără", videos: "Videoclipuri", integrations: "Integrări" },
-        en: { overview: "Overview", new: "New Campaign", settings: "Settings", analytics: "Analytics", billing: "Billing", profile: "My Profile", soon: "SOON", tip: "Budgets > 100 RON are +40% viral.", created: "The campaign was successfully created!", paused: "The campaign was put on pause.", reopened: "The campaign has been restarted.", deleted: "The campaign has been deleted.", tokens: "Tokens", buyTokens: "Buy", videos: "Videos", integrations: "Integrations" }
+        ro: { overview: "Privire Generală", new: "Campanie Nouă", settings: "Setări", analytics: "Analitice", billing: "Plata", profile: "Profilul Meu", soon: "SOON", tip: "Bugetele > 100 RON au +40% șanse.", created: "Campania a fost creată cu succes!", paused: "Campania a fost pusă pe pauză.", reopened: "Campania a fost repornită.", deleted: "Campania a fost ștearsă.", tokens: "Tokens", buyTokens: "Cumpără", videos: "Videoclipuri", integrations: "Integrări", communityMap: "Harta Comunitară" },
+        en: { overview: "Overview", new: "New Campaign", settings: "Settings", analytics: "Analytics", billing: "Billing", profile: "My Profile", soon: "SOON", tip: "Budgets > 100 RON are +40% viral.", created: "The campaign was successfully created!", paused: "The campaign was put on pause.", reopened: "The campaign has been restarted.", deleted: "The campaign has been deleted.", tokens: "Tokens", buyTokens: "Buy", videos: "Videos", integrations: "Integrations", communityMap: "Community Map" }
     };
     const t = language === 'ro' ? sidebarTexts.ro : sidebarTexts.en;
     const showNotification = (message: string, type: NotificationType = 'success') => { setNotification({ show: true, message, type }); };
@@ -180,6 +181,7 @@ export default function Dashboard() {
                             <p className="px-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Main Menu</p>
                             <div className="space-y-1.5">
                                 <SidebarItem icon={<LayoutDashboard size={20} />} label={t.overview} active={activePage === 'overview'} onClick={() => setActivePage('overview')} />
+                                <SidebarItem icon={<Map size={20} />} label={t.communityMap} active={activePage === 'communityMap'} onClick={() => setActivePage('communityMap')} />
                                 <SidebarItem icon={<PlusCircle size={20} />} label={t.new} active={activePage === 'new'} onClick={() => setActivePage('new')} />
                                 <SidebarItem icon={<BarChart3 size={20} />} label={t.analytics} active={activePage === 'analytics'} onClick={() => setActivePage('analytics')} />
                                 <SidebarItem icon={<Video size={20} />} label={t.videos} active={activePage === 'videos'} onClick={() => setActivePage('videos')} />
@@ -259,6 +261,7 @@ export default function Dashboard() {
                                 onView={handleViewDetails}
                             />
                         )}
+                        {activePage === 'communityMap' && <CommunityMap />}
                         {activePage === 'new' && (
                             <NewCampaign onPublish={handlePublish} onCancel={() => setActivePage('overview')} lang={language} />
                         )}
