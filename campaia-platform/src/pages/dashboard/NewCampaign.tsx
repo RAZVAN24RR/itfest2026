@@ -767,7 +767,7 @@ export default function NewCampaign({ onPublish, onCancel, lang }: NewCampaignPr
                                         </div>
                                         <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">{t.s5.labelTargeting}</h4>
                                         <div className="space-y-1">
-                                            <p className="text-[10px] font-black text-slate-900 uppercase truncate">{targetingData.countries?.join(', ')}</p>
+                                            <p className="text-[10px] font-black text-slate-900 uppercase truncate">🇷🇴 România</p>
                                             <p className="text-[9px] font-bold text-slate-400 uppercase">{targetingData.ageGroups?.length === 5 ? 'All ages' : targetingData.ageGroups?.length + ' groups'} • {targetingData.gender?.replace('GENDER_', '')}</p>
                                         </div>
                                     </div>

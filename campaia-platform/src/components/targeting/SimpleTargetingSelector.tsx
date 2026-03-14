@@ -16,15 +16,6 @@ import { Globe, Users, UserCheck } from 'lucide-react';
 // Source: TikTok Marketing API
 export const TIKTOK_COUNTRIES = [
     { code: 'RO', id: '642', name: 'România', nameEn: 'Romania', flag: '🇷🇴' },
-    { code: 'DE', id: '276', name: 'Germania', nameEn: 'Germany', flag: '🇩🇪' },
-    { code: 'FR', id: '250', name: 'Franța', nameEn: 'France', flag: '🇫🇷' },
-    { code: 'IT', id: '380', name: 'Italia', nameEn: 'Italy', flag: '🇮🇹' },
-    { code: 'ES', id: '724', name: 'Spania', nameEn: 'Spain', flag: '🇪🇸' },
-    { code: 'GB', id: '826', name: 'Marea Britanie', nameEn: 'United Kingdom', flag: '🇬🇧' },
-    { code: 'US', id: '840', name: 'SUA', nameEn: 'United States', flag: '🇺🇸' },
-    { code: 'NL', id: '528', name: 'Olanda', nameEn: 'Netherlands', flag: '🇳🇱' },
-    { code: 'PL', id: '616', name: 'Polonia', nameEn: 'Poland', flag: '🇵🇱' },
-    { code: 'AT', id: '040', name: 'Austria', nameEn: 'Austria', flag: '🇦🇹' },
 ];
 
 // TikTok Age Groups - these are the ONLY options TikTok supports
@@ -75,8 +66,8 @@ export default function SimpleTargetingSelector({
 }: SimpleTargetingSelectorProps) {
     const texts = {
         ro: {
-            countries: 'Țări',
-            countriesHint: 'Selectează unde vrei să fie văzut videoclipul',
+            countries: 'România',
+            countriesHint: '',
             age: 'Grupe de Vârstă',
             ageHint: 'Alege categoriile de vârstă țintă',
             gender: 'Gen',
@@ -88,8 +79,8 @@ export default function SimpleTargetingSelector({
             selectCity: 'Selectează orașul'
         },
         en: {
-            countries: 'Countries',
-            countriesHint: 'Select where you want your video to be seen',
+            countries: 'Romania',
+            countriesHint: '',
             age: 'Age Groups',
             ageHint: 'Choose target age categories',
             gender: 'Gender',
@@ -103,14 +94,6 @@ export default function SimpleTargetingSelector({
     };
 
     const t = lang === 'ro' ? texts.ro : texts.en;
-
-    const toggleCountry = (code: string) => {
-        if (disabled) return;
-        const newCountries = value.countries.includes(code)
-            ? value.countries.filter(c => c !== code)
-            : [...value.countries, code];
-        onChange({ ...value, countries: newCountries.length > 0 ? newCountries : ['RO'] });
-    };
 
     const toggleAgeGroup = (id: string) => {
         if (disabled) return;
@@ -152,30 +135,11 @@ export default function SimpleTargetingSelector({
                 <span>{t.note}</span>
             </div>
 
-            {/* Countries */}
-            <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-purple-600" />
-                    <label className="text-sm font-bold text-slate-700">{t.countries}</label>
-                </div>
-                <p className="text-xs text-slate-400">{t.countriesHint}</p>
-                <div className="flex flex-wrap gap-2">
-                    {TIKTOK_COUNTRIES.map(country => (
-                        <button
-                            key={country.code}
-                            type="button"
-                            onClick={() => toggleCountry(country.code)}
-                            disabled={disabled}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-sm font-medium transition-all ${value.countries.includes(country.code)
-                                ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                : 'border-slate-100 hover:border-slate-300 text-slate-600'
-                                } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                            <span>{country.flag}</span>
-                            <span>{lang === 'ro' ? country.name : country.nameEn}</span>
-                        </button>
-                    ))}
-                </div>
+            {/* Country — Romania only */}
+            <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                <span className="text-lg">🇷🇴</span>
+                <span className="text-sm font-bold text-purple-800">{lang === 'ro' ? 'România' : 'Romania'}</span>
+                <span className="text-[10px] text-purple-500 font-medium uppercase tracking-widest ml-auto">{lang === 'ro' ? 'Țara implicită' : 'Default country'}</span>
             </div>
 
             {/* Age Groups */}
