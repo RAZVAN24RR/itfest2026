@@ -6,7 +6,7 @@ Aggregates all route modules under /api/v1 prefix.
 
 from fastapi import APIRouter
 
-from app.api.routes import ai, auth, campaigns, payments, users, video, targeting, invoices, tiktok
+from app.api.routes import ai, auth, campaigns, payments, users, video, targeting, invoices, tiktok, agent
 
 # Create main router with API version prefix
 api_router = APIRouter(prefix="/api/v1")
@@ -21,6 +21,7 @@ api_router.include_router(video.router, tags=["Video Generation"])
 api_router.include_router(targeting.router, tags=["Targeting"])
 api_router.include_router(invoices.router, prefix="/invoices", tags=["Invoices"])
 api_router.include_router(tiktok.router, tags=["TikTok Integration"])
+api_router.include_router(agent.router, tags=["Campaia Agent"])
 
 # Future routes (uncomment as they are created)
 

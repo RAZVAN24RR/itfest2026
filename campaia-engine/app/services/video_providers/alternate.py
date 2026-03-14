@@ -63,15 +63,15 @@ async def try_alternate_generation(
             raise AlternateProviderError(f"Health check failed: {e}")
 
         try:
-            async with httpx.AsyncClient(timeout=300.0) as client:
+            async with httpx.AsyncClient(timeout=1200.0) as client:
                 resp = await client.post(
                     f"{base}/generate",
                     json={
                         "prompt": prompt,
                         "num_frames": 16,
-                        "width": 256,
-                        "height": 256,
-                        "num_inference_steps": 25,
+                        "width": 192,
+                        "height": 192,
+                        "num_inference_steps": 20,
                     },
                 )
                 if resp.status_code != 200:

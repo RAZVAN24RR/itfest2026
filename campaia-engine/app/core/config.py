@@ -113,6 +113,11 @@ class Settings(BaseSettings):
     stable_video_url: str = Field(default="", description="Local Stable Video endpoint (optional)")
 
     # ============================================
+    # Gemini AI (Agent Chat)
+    # ============================================
+    gemini_api_key: str = Field(default="", description="Google Gemini API key")
+
+    # ============================================
     # External APIs - TikTok (Model Centralizat - Contul Campaia)
     # ============================================
     tiktok_app_id: str = Field(default="", description="TikTok app ID")
