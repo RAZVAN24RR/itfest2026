@@ -145,7 +145,10 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({
                   : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
               } disabled:opacity-50`}
             >
-              <span className="font-bold block">{s.label}</span>
+              <div className="flex items-center justify-between">
+                <span className="font-bold">{s.label}</span>
+                <span className="text-[10px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{s.model}</span>
+              </div>
               <span className="text-xs text-slate-500 mt-1 block">{s.sub}</span>
               <span className="text-[10px] font-bold text-purple-600 mt-2 block">
                 {getVideoCost(duration, quality, s.id)} credite
@@ -296,7 +299,13 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({
           />
           <div className="flex flex-col gap-1 mt-3 text-sm text-slate-600">
             <span>{generatedVideo.duration}s • {generatedVideo.quality} • {generatedVideo.aspect_ratio || '9:16'}</span>
-            <span>Generated with: {generatedVideo.provider_used || generatedVideo.provider_requested || 'Kling AI'}</span>
+            <span>
+              Generated with: {(() => {
+                const pid = generatedVideo.provider_used || generatedVideo.provider_requested || 'KLING';
+                const match = VIDEO_STYLES.find(s => s.id === pid);
+                return match ? `${match.model} (${match.label})` : pid;
+              })()}
+            </span>
             {generatedVideo.fallback_used && (
               <span className="text-amber-700 text-xs font-medium">Stilul inițial nu a fost disponibil — fast generation.</span>
             )}

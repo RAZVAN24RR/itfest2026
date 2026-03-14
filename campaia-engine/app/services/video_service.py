@@ -203,20 +203,30 @@ class VideoGenerationService:
                 await self._run_kling_pipeline(db, video_job)
             else:
                 last_err = None
+                video_bytes = None
                 for attempt in (1, 2):
                     try:
-                        await try_alternate_generation(
+                        result = await try_alternate_generation(
                             requested, video_job.prompt, attempt=attempt
                         )
+                        if isinstance(result, bytes) and len(result) > 0:
+                            video_bytes = result
+                            break
                     except AlternateProviderError as e:
                         last_err = e
                         logger.info(
                             "Alternate %s attempt %s: %s", requested, attempt, e
                         )
-                video_job.fallback_used = True
-                video_job.provider_used = VideoProviderId.KLING.value
-                await db.commit()
-                await self._run_kling_pipeline(db, video_job)
+                if video_bytes:
+                    video_job.provider_used = requested.value
+                    video_job.fallback_used = False
+                    await db.commit()
+                    await self._save_local_video(db, video_job, video_bytes)
+                else:
+                    video_job.fallback_used = True
+                    video_job.provider_used = VideoProviderId.KLING.value
+                    await db.commit()
+                    await self._run_kling_pipeline(db, video_job)
 
             video_job.generation_duration_ms = int(
                 (time.perf_counter() - t0) * 1000
@@ -246,6 +256,52 @@ class VideoGenerationService:
                     )
                 except Exception as re:
                     logger.error("Refund error: %s", re)
+
+    async def _save_local_video(
+        self,
+        db: AsyncSession,
+        video_job: VideoGeneration,
+        video_bytes: bytes,
+    ) -> None:
+        """Store locally-generated video bytes via S3 (same as Kling upload)."""
+        import boto3, os
+        s3_endpoint = os.getenv("AWS_ENDPOINT_URL", "http://localhost:4566")
+        s3_bucket = os.getenv("S3_BUCKET_MEDIA", "campaia-dev-media")
+        aws_region = os.getenv("AWS_REGION", "eu-central-1")
+        s3_client = boto3.client(
+            "s3",
+            endpoint_url=s3_endpoint,
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", "test"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", "test"),
+            region_name=aws_region,
+        )
+        try:
+            s3_client.head_bucket(Bucket=s3_bucket)
+        except Exception:
+            try:
+                s3_client.create_bucket(
+                    Bucket=s3_bucket,
+                    CreateBucketConfiguration={"LocationConstraint": aws_region},
+                )
+            except Exception:
+                pass
+        s3_key = f"videos/{video_job.user_id}/{video_job.id}/video.mp4"
+        s3_client.put_object(
+            Bucket=s3_bucket, Key=s3_key, Body=video_bytes, ContentType="video/mp4"
+        )
+        if "localhost" in s3_endpoint or "localstack" in s3_endpoint:
+            video_url = f"{s3_endpoint}/{s3_bucket}/{s3_key}"
+        else:
+            video_url = f"https://{s3_bucket}.s3.{aws_region}.amazonaws.com/{s3_key}"
+        video_job.video_url = video_url
+        video_job.s3_key = s3_key
+        video_job.file_size_bytes = len(video_bytes)
+        video_job.width = 256
+        video_job.height = 256
+        video_job.status = VideoStatus.COMPLETED
+        video_job.progress_percent = 100
+        await db.commit()
+        logger.info("Local video saved to S3: %s", s3_key)
 
     async def get_video_status(
         self,

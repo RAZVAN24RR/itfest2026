@@ -10,7 +10,7 @@ from app.api.deps import CurrentUser, DbSession
 from app.models.video_generation import VideoQuality, VideoDuration, VideoStatus
 from app.services.video_service import video_service
 from app.services.wallet_service import WalletService
-from app.services.video_providers.base import VideoProviderId, PROVIDER_LABELS, provider_token_multiplier
+from app.services.video_providers.base import VideoProviderId, PROVIDER_META, provider_token_multiplier
 from app.schemas.video import (
     VideoGenerateRequest,
     VideoGenerateResponse,
@@ -52,7 +52,7 @@ def _item(v) -> VideoListItem:
 
 @router.get("/providers")
 async def list_video_providers(current_user: CurrentUser):
-    """UX-facing generation styles + token multipliers."""
+    """UX-facing generation styles + model names + token multipliers."""
     out = []
     for p in (
         VideoProviderId.KLING,
@@ -60,11 +60,12 @@ async def list_video_providers(current_user: CurrentUser):
         VideoProviderId.PIKA,
         VideoProviderId.STABLE_VIDEO,
     ):
+        meta = PROVIDER_META.get(p, {})
         out.append(
             VideoProviderInfo(
                 id=p.value,
-                label=PROVIDER_LABELS[p],
-                description=PROVIDER_LABELS[p],
+                label=meta.get("label", p.value),
+                description=f"{meta.get('model', '')} — {meta.get('description', '')}",
                 token_multiplier=provider_token_multiplier(p),
             )
         )

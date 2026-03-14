@@ -243,7 +243,11 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({
                             {/* Info */}
                             <div className="p-3">
                                 <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide mb-1">
-                                  Generated with: {video.provider_used === 'UPLOAD' ? 'Upload' : (video.provider_used || video.provider_requested || 'Kling AI')}
+                                  {(() => {
+                                    const pid = video.provider_used === 'UPLOAD' ? 'Upload' : (video.provider_used || video.provider_requested || 'KLING');
+                                    const modelMap: Record<string, string> = { KLING: 'Kling v1.6', RUNWAY: 'Runway Gen-3 Alpha', PIKA: 'Pika 1.0', STABLE_VIDEO: 'ModelScope v1.7b', UPLOAD: 'Upload' };
+                                    return modelMap[pid] || pid;
+                                  })()}
                                   {video.fallback_used ? ' · fallback' : ''}
                                 </p>
                                 <p className="text-[10px] text-slate-400 mb-1">{video.duration}s · {video.aspect_ratio || '9:16'}</p>

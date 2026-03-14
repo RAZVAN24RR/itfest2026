@@ -67,11 +67,18 @@ Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă,
 - RO/EN, hashtag-uri, audiență, punchline, prompturi Kling
 - Health Ollama
 
-### 4. GENERARE VIDEO (multi-provider + Kling fallback)
-- Stiluri UX: Fast generation (Kling), Cinematic (Runway), Social (Pika), Experimental (Stable Video)
+### 4. GENERARE VIDEO (multi-provider + Kling fallback + local GPU)
+- Stiluri UX cu modelul real vizibil:
+  • Fast generation — Kling v1.6 (cloud)
+  • Cinematic quality — Runway Gen-3 Alpha (cloud, stub)
+  • Social media style — Pika 1.0 (cloud, stub)
+  • Local AI (on your GPU) — ModelScope v1.7b (diffusers, fp16, GTX 1650 Ti 4GB VRAM)
 - Tokeni diferiți per stil; fallback automat pe Kling dacă alternativa nu e configurată/eșuează
+- Local video service: scripts/local_video_service.py (FastAPI pe port 8001)
+  • STABLE_VIDEO_URL=http://localhost:8001 în .env
+  • Dacă serviciul local e pornit: generare video pe GPU; altfel fallback Kling
 - DB: video_provider, provider_used, fallback_used, aspect_ratio 9:16, generation_duration_ms
-- Text-to-video prin Kling în pipeline unic; My Videos arată provider + durată + raport
+- My Videos / galerie arată model real (ex: Kling v1.6, ModelScope v1.7b) + fallback badge
 
 ### 5. TOKENI & STRIPE
 - Wallet, pachete (Starter 100/29 RON … Business 1500/299 RON)

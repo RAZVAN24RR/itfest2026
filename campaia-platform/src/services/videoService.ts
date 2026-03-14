@@ -12,13 +12,14 @@ export type VideoProvider = 'KLING' | 'RUNWAY' | 'PIKA' | 'STABLE_VIDEO';
 export const VIDEO_STYLES: {
   id: VideoProvider;
   label: string;
+  model: string;
   sub: string;
   mult: number;
 }[] = [
-  { id: 'KLING', label: 'Fast generation', sub: 'Quick, reliable clips', mult: 1 },
-  { id: 'RUNWAY', label: 'Cinematic quality', sub: 'Rich, film-like look', mult: 1.35 },
-  { id: 'PIKA', label: 'Social media style', sub: 'Trendy, vertical-ready', mult: 1 },
-  { id: 'STABLE_VIDEO', label: 'Experimental / local AI', sub: 'Lower cost, beta', mult: 0.55 },
+  { id: 'KLING',        label: 'Fast generation',      model: 'Kling v1.6',          sub: 'Quick, reliable 9:16 clips — cloud',     mult: 1    },
+  { id: 'RUNWAY',       label: 'Cinematic quality',     model: 'Runway Gen-3 Alpha',  sub: 'Rich, film-like look — cloud API',       mult: 1.35 },
+  { id: 'PIKA',         label: 'Social media style',    model: 'Pika 1.0',            sub: 'Trendy, vertical-ready — cloud API',     mult: 1    },
+  { id: 'STABLE_VIDEO', label: 'Local AI (on your GPU)',model: 'ModelScope v1.7b',    sub: 'Runs locally, no cloud — lower cost',    mult: 0.55 },
 ];
 
 export interface VideoGenerateRequest {

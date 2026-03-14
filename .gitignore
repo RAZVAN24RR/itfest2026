@@ -53,3 +53,4 @@ localstack_data/
 htmlcov/
 .coverage
 coverage.xml
+scripts/local-video-env/
