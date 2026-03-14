@@ -12,9 +12,11 @@ import {
   generateVideo,
   getVideoCost,
   pollVideoStatus,
+  VIDEO_STYLES,
   type VideoDuration,
   type VideoQuality,
   type VideoStatusResponse,
+  type VideoProvider,
 } from '../services/videoService';
 
 interface VideoGeneratorProps {
@@ -39,6 +41,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({
   const [editablePrompt, setEditablePrompt] = useState(prompt);
   const [duration, setDuration] = useState<VideoDuration>('5');
   const [quality, setQuality] = useState<VideoQuality>('STANDARD');
+  const [provider, setProvider] = useState<VideoProvider>('KLING');
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [status, setStatus] = useState<string>('');
@@ -50,7 +53,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({
     setEditablePrompt(prompt);
   }, [prompt]);
 
-  const cost = getVideoCost(duration, quality);
+  const cost = getVideoCost(duration, quality, provider);
   const canAfford = userCredits >= cost;
 
   const handleGenerate = async () => {
@@ -68,15 +71,16 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({
 
     try {
       const response = await generateVideo({
-        prompt: editablePrompt, // Use the editable prompt
+        prompt: editablePrompt,
         script,
         campaign_id: campaignId,
         duration,
         quality,
+        provider,
       });
 
       onCreditsUsed?.(response.tokens_cost);
-      setStatus('Video în procesare la Kling AI...');
+      setStatus('Video în procesare…');
 
       const finalStatus = await pollVideoStatus(
         response.id,
@@ -89,7 +93,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({
               setProgress(prev => Math.max(prev, 5));
               break;
             case 'PROCESSING':
-              setStatus('Kling AI generează videoclipul...');
+              setStatus('AI generează videoclipul (9:16)…');
               // Ensure we show at least 15% if it's processing
               if (statusUpdate.progress_percent <= 10) setProgress(15);
               break;
@@ -123,6 +127,37 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Video generation style (provider) */}
+      <div>
+        <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
+          Video generation style
+        </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {VIDEO_STYLES.map((s) => (
+            <button
+              key={s.id}
+              type="button"
+              onClick={() => setProvider(s.id)}
+              disabled={isGenerating}
+              className={`p-4 rounded-xl border-2 text-left transition-all ${
+                provider === s.id
+                  ? 'border-purple-500 bg-purple-50 text-purple-900'
+                  : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+              } disabled:opacity-50`}
+            >
+              <span className="font-bold block">{s.label}</span>
+              <span className="text-xs text-slate-500 mt-1 block">{s.sub}</span>
+              <span className="text-[10px] font-bold text-purple-600 mt-2 block">
+                {getVideoCost(duration, quality, s.id)} credite
+              </span>
+            </button>
+          ))}
+        </div>
+        <p className="text-[10px] text-slate-400 mt-2">
+          Dacă stilul ales nu e disponibil, folosim automat fast generation — ești informat la final.
+        </p>
+      </div>
+
       {/* Duration Selector */}
       <div>
         <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide mb-3">
@@ -259,9 +294,13 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({
             className="w-full max-w-sm mx-auto rounded-xl bg-black"
             poster={generatedVideo.thumbnail_url || undefined}
           />
-          <div className="flex items-center justify-between mt-3 text-sm text-slate-600">
-            <span>{generatedVideo.duration}s • {generatedVideo.quality}</span>
-            <span>{generatedVideo.tokens_spent} credite folosite</span>
+          <div className="flex flex-col gap-1 mt-3 text-sm text-slate-600">
+            <span>{generatedVideo.duration}s • {generatedVideo.quality} • {generatedVideo.aspect_ratio || '9:16'}</span>
+            <span>Generated with: {generatedVideo.provider_used || generatedVideo.provider_requested || 'Kling AI'}</span>
+            {generatedVideo.fallback_used && (
+              <span className="text-amber-700 text-xs font-medium">Stilul inițial nu a fost disponibil — fast generation.</span>
+            )}
+            <span>{generatedVideo.tokens_spent} credite</span>
           </div>
         </div>
       )}
@@ -270,7 +309,7 @@ const VideoGenerator: React.FC<VideoGeneratorProps> = ({
       <div>
         <label className="block text-sm font-bold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-purple-600" />
-          Prompt Vizual pentru Kling AI
+          Prompt vizual (toate stilurile)
         </label>
         <textarea
           value={editablePrompt}

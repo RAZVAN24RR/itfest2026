@@ -67,9 +67,11 @@ Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă,
 - RO/EN, hashtag-uri, audiență, punchline, prompturi Kling
 - Health Ollama
 
-### 4. GENERARE VIDEO (Kling + S3)
-- Text-to-video, image-to-video, job async, upload S3, galerie
-- My Videos, Community Feed; VideoGenerator, Gallery, Upload, Preview
+### 4. GENERARE VIDEO (multi-provider + Kling fallback)
+- Stiluri UX: Fast generation (Kling), Cinematic (Runway), Social (Pika), Experimental (Stable Video)
+- Tokeni diferiți per stil; fallback automat pe Kling dacă alternativa nu e configurată/eșuează
+- DB: video_provider, provider_used, fallback_used, aspect_ratio 9:16, generation_duration_ms
+- Text-to-video prin Kling în pipeline unic; My Videos arată provider + durată + raport
 
 ### 5. TOKENI & STRIPE
 - Wallet, pachete (Starter 100/29 RON … Business 1500/299 RON)

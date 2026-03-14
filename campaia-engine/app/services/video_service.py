@@ -1,17 +1,11 @@
 """
-Campaia Engine - Video Generation Service
-
-Manages video generation workflow:
-1. Create job in database (PENDING)
-2. Call Kling AI API
-3. Poll for completion
-4. Download and upload to S3
-5. Update database with final URL
+Video generation: multi-provider orchestration, Kling fallback, 9:16 for TikTok.
 """
 
 import uuid
 import asyncio
 import logging
+import time
 from typing import Optional
 
 import httpx
@@ -33,42 +27,24 @@ from app.services.kling.kling_client import (
     KlingAspectRatio,
 )
 from app.services.wallet_service import WalletService
-from app.schemas.video import get_video_token_cost
+from app.schemas.video import get_video_cost_with_provider
 from app.core.database import async_session_maker
+from app.services.video_providers.base import VideoProviderId
+from app.services.video_providers.alternate import try_alternate_generation, AlternateProviderError
 
 logger = logging.getLogger(__name__)
 
 
 class VideoGenerationService:
-    """
-    Service for managing AI video generation.
-    
-    Handles:
-    - Creating video generation jobs
-    - Interacting with Kling AI
-    - S3 storage
-    - Token deduction
-    """
-    
-    # Model mapping
     QUALITY_TO_KLING_MODE = {
         VideoQuality.STANDARD: KlingMode.STANDARD,
         VideoQuality.PROFESSIONAL: KlingMode.PROFESSIONAL,
     }
-    
     DURATION_TO_KLING = {
         VideoDuration.SHORT: KlingDurationEnum.SHORT,
         VideoDuration.LONG: KlingDurationEnum.LONG,
     }
-    
-    async def get_token_cost(
-        self,
-        duration: VideoDuration,
-        quality: VideoQuality,
-    ) -> int:
-        """Get token cost for video generation."""
-        return get_video_token_cost(duration.value, quality.value)
-    
+
     async def create_video_job(
         self,
         db: AsyncSession,
@@ -78,35 +54,23 @@ class VideoGenerationService:
         campaign_id: Optional[uuid.UUID] = None,
         duration: VideoDuration = VideoDuration.SHORT,
         quality: VideoQuality = VideoQuality.STANDARD,
+        provider: VideoProviderId = VideoProviderId.KLING,
     ) -> VideoGeneration:
-        """
-        Create a new video generation job.
-        
-        This creates the database entry and initiates the Kling API call.
-        The actual video generation happens asynchronously.
-        """
-        # Calculate cost
-        token_cost = await self.get_token_cost(duration, quality)
-        
-        # Create wallet service instance
+        token_cost = get_video_cost_with_provider(
+            duration.value, quality.value, provider.value
+        )
         wallet_svc = WalletService(db)
-        
-        # Check balance
         balance = await wallet_svc.get_balance(user.id)
         if balance < token_cost:
             raise ValueError(
                 f"Insufficient tokens. Required: {token_cost}, Available: {balance}"
             )
-        
-        # Deduct tokens first
         await wallet_svc.spend_tokens(
             user_id=user.id,
             amount=token_cost,
-            description=f"AI Video Generation ({duration.value}s {quality.value})",
+            description=f"AI Video ({provider.value}, {duration.value}s {quality.value})",
             action_type="VIDEO_GENERATION",
         )
-        
-        # Create database entry
         video_job = VideoGeneration(
             user_id=user.id,
             campaign_id=campaign_id,
@@ -114,192 +78,181 @@ class VideoGenerationService:
             script=script,
             duration=duration,
             quality=quality,
+            video_provider=provider.value,
+            provider_used=None,
+            fallback_used=False,
+            aspect_ratio="9:16",
             status=VideoStatus.PENDING,
             tokens_spent=token_cost,
             progress_percent=0,
         )
-        
         db.add(video_job)
         await db.commit()
         await db.refresh(video_job)
-        
-        # Start async generation with its own DB session
-        # We pass the video_id, not the session
-        asyncio.create_task(
-            self._process_video_generation_task(video_job.id)
-        )
-        
+        asyncio.create_task(self._process_video_generation_task(video_job.id))
         return video_job
-    
-    async def _process_video_generation_task(
-        self,
-        video_id: uuid.UUID,
-    ) -> None:
-        """
-        Wrapper that creates its own DB session for the background task.
-        """
+
+    async def _process_video_generation_task(self, video_id: uuid.UUID) -> None:
         try:
             async with async_session_maker() as db:
                 await self._process_video_generation(db, video_id)
         except Exception as e:
-            logger.error(f"Background video generation failed for {video_id}: {e}")
-            # Try to mark as failed and refund
+            logger.error("Background video generation failed for %s: %s", video_id, e)
             try:
                 async with async_session_maker() as db:
                     result = await db.execute(
                         select(VideoGeneration).where(VideoGeneration.id == video_id)
                     )
                     video_job = result.scalar_one_or_none()
-                    if video_job and video_job.status not in [VideoStatus.COMPLETED, VideoStatus.FAILED]:
-                        # Pre-emptive status update to avoid double refunds
+                    if video_job and video_job.status not in [
+                        VideoStatus.COMPLETED,
+                        VideoStatus.FAILED,
+                    ]:
                         video_job.status = VideoStatus.FAILED
                         video_job.error_message = str(e)[:500]
                         tokens_to_refund = video_job.tokens_spent
                         await db.commit()
-                        
-                        # Perform refund
                         if tokens_to_refund > 0:
                             wallet_svc = WalletService(db)
                             await wallet_svc.add_tokens(
                                 user_id=video_job.user_id,
                                 amount=tokens_to_refund,
-                                description=f"Refund for failed video generation: {video_id}",
-                                action_type="REFUND"
+                                description=f"Refund failed video {video_id}",
+                                action_type="REFUND",
                             )
             except Exception as inner_e:
-                logger.error(f"Failed to mark video as failed or refund: {inner_e}")
-    
+                logger.error("Refund failed: %s", inner_e)
+
+    async def _run_kling_pipeline(
+        self,
+        db: AsyncSession,
+        video_job: VideoGeneration,
+    ) -> None:
+        kling_mode = self.QUALITY_TO_KLING_MODE[video_job.quality]
+        kling_duration = self.DURATION_TO_KLING[video_job.duration]
+        response = await kling_client.text_to_video(
+            prompt=video_job.prompt,
+            model=KlingModel.V1_6,
+            mode=kling_mode,
+            duration=kling_duration,
+            aspect_ratio=KlingAspectRatio.RATIO_9_16,
+        )
+        task_id = response.get("data", {}).get("task_id")
+        if not task_id:
+            raise RuntimeError(f"No task_id in Kling response: {response}")
+        video_job.kling_task_id = task_id
+        video_job.progress_percent = 30
+        await db.commit()
+        final_status = await kling_client.wait_for_video(
+            task_id=task_id,
+            is_image_to_video=False,
+            timeout_seconds=900,
+            poll_interval=10,
+        )
+        video_job.progress_percent = 80
+        await db.commit()
+        videos = final_status.get("data", {}).get("task_result", {}).get("videos", [])
+        if not videos:
+            raise RuntimeError(f"No videos in Kling response: {final_status}")
+        kling_video_url = videos[0].get("url")
+        if not kling_video_url:
+            raise RuntimeError("No video URL in Kling response")
+        video_job.status = VideoStatus.UPLOADING
+        video_job.progress_percent = 85
+        await db.commit()
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            video_response = await client.get(kling_video_url)
+            video_response.raise_for_status()
+            video_data = video_response.content
+        s3_key = f"videos/{video_job.user_id}/{video_job.id}/video.mp4"
+        video_job.video_url = kling_video_url
+        video_job.s3_key = s3_key
+        video_job.file_size_bytes = len(video_data)
+        video_job.width = 1080
+        video_job.height = 1920
+        video_job.status = VideoStatus.COMPLETED
+        video_job.progress_percent = 100
+        await db.commit()
+
     async def _process_video_generation(
         self,
         db: AsyncSession,
         video_id: uuid.UUID,
     ) -> None:
-        """
-        Process video generation asynchronously.
-        
-        This is the background task that:
-        1. Calls Kling API
-        2. Polls for completion
-        3. Downloads video
-        4. Uploads to S3
-        5. Updates database
-        """
-        # Get video job
         result = await db.execute(
             select(VideoGeneration).where(VideoGeneration.id == video_id)
         )
         video_job = result.scalar_one_or_none()
-        
         if not video_job:
-            logger.error(f"Video job {video_id} not found")
             return
-        
+        t0 = time.perf_counter()
+        requested = VideoProviderId.KLING
         try:
-            # Update status to PROCESSING
+            requested = VideoProviderId(video_job.video_provider)
+        except ValueError:
+            requested = VideoProviderId.KLING
+
+        try:
             video_job.status = VideoStatus.PROCESSING
             video_job.progress_percent = 10
             await db.commit()
-            
-            logger.info(f"Starting Kling API call for video {video_id}")
-            
-            # Map quality and duration
-            kling_mode = self.QUALITY_TO_KLING_MODE[video_job.quality]
-            kling_duration = self.DURATION_TO_KLING[video_job.duration]
-            
-            # Call Kling API
-            response = await kling_client.text_to_video(
-                prompt=video_job.prompt,
-                model=KlingModel.V1_6,
-                mode=kling_mode,
-                duration=kling_duration,
-                aspect_ratio=KlingAspectRatio.RATIO_9_16,  # TikTok format
+
+            if requested == VideoProviderId.KLING:
+                video_job.provider_used = VideoProviderId.KLING.value
+                await db.commit()
+                await self._run_kling_pipeline(db, video_job)
+            else:
+                last_err = None
+                for attempt in (1, 2):
+                    try:
+                        await try_alternate_generation(
+                            requested, video_job.prompt, attempt=attempt
+                        )
+                    except AlternateProviderError as e:
+                        last_err = e
+                        logger.info(
+                            "Alternate %s attempt %s: %s", requested, attempt, e
+                        )
+                video_job.fallback_used = True
+                video_job.provider_used = VideoProviderId.KLING.value
+                await db.commit()
+                await self._run_kling_pipeline(db, video_job)
+
+            video_job.generation_duration_ms = int(
+                (time.perf_counter() - t0) * 1000
             )
-            
-            logger.info(f"Kling API response: {response}")
-            
-            # Extract task ID
-            task_id = response.get("data", {}).get("task_id")
-            if not task_id:
-                raise RuntimeError(f"No task_id in Kling response: {response}")
-            
-            video_job.kling_task_id = task_id
-            video_job.progress_percent = 30
+            if video_job.status == VideoStatus.COMPLETED:
+                video_job.error_message = None
+                if video_job.fallback_used:
+                    video_job.error_message = (
+                        "Your chosen style was unavailable; we used fast generation instead."
+                    )[:500]
             await db.commit()
-            
-            logger.info(f"Kling task_id: {task_id}, polling for completion...")
-            
-            # Poll for completion
-            final_status = await kling_client.wait_for_video(
-                task_id=task_id,
-                is_image_to_video=False,
-                timeout_seconds=900,  # 15 min max
-                poll_interval=10,
-            )
-            
-            video_job.progress_percent = 80
-            await db.commit()
-            
-            # Extract video URL from Kling response
-            videos = final_status.get("data", {}).get("task_result", {}).get("videos", [])
-            if not videos:
-                raise RuntimeError(f"No videos in Kling response: {final_status}")
-            
-            kling_video_url = videos[0].get("url")
-            if not kling_video_url:
-                raise RuntimeError(f"No video URL in Kling response: {final_status}")
-            
-            # Update status to UPLOADING
-            video_job.status = VideoStatus.UPLOADING
-            video_job.progress_percent = 85
-            await db.commit()
-            
-            # Download video from Kling
-            async with httpx.AsyncClient(timeout=120.0) as client:
-                video_response = await client.get(kling_video_url)
-                video_response.raise_for_status()
-                video_data = video_response.content
-            
-            # Generate S3 key
-            s3_key = f"videos/{video_job.user_id}/{video_job.id}/video.mp4"
-            
-            # For now, store the Kling URL directly
-            # TODO: Upload to S3 when LocalStack is configured
-            video_job.video_url = kling_video_url
-            video_job.s3_key = s3_key
-            video_job.file_size_bytes = len(video_data)
-            video_job.status = VideoStatus.COMPLETED
-            video_job.progress_percent = 100
-            
-            await db.commit()
-            logger.info(f"Video {video_id} completed successfully!")
-            
+            logger.info("Video %s completed provider_used=%s", video_id, video_job.provider_used)
         except Exception as e:
-            logger.error(f"Video generation failed: {e}")
+            logger.error("Video generation failed: %s", e)
             video_job.status = VideoStatus.FAILED
             video_job.error_message = str(e)[:500]
             tokens_to_refund = video_job.tokens_spent
             await db.commit()
-            
-            # Perform refund
             if tokens_to_refund > 0:
                 try:
                     wallet_svc = WalletService(db)
                     await wallet_svc.add_tokens(
                         user_id=video_job.user_id,
                         amount=tokens_to_refund,
-                        description=f"Refund for failed video generation: {video_id}",
-                        action_type="REFUND"
+                        description=f"Refund failed video {video_id}",
+                        action_type="REFUND",
                     )
-                except Exception as refund_err:
-                    logger.error(f"Refund failed for video {video_id}: {refund_err}")
-    
+                except Exception as re:
+                    logger.error("Refund error: %s", re)
+
     async def get_video_status(
         self,
         db: AsyncSession,
         video_id: uuid.UUID,
         user_id: uuid.UUID,
     ) -> Optional[VideoGeneration]:
-        """Get video generation status."""
         result = await db.execute(
             select(VideoGeneration).where(
                 VideoGeneration.id == video_id,
@@ -307,7 +260,7 @@ class VideoGenerationService:
             )
         )
         return result.scalar_one_or_none()
-    
+
     async def get_user_videos(
         self,
         db: AsyncSession,
@@ -316,17 +269,11 @@ class VideoGenerationService:
         limit: int = 20,
         offset: int = 0,
     ) -> list[VideoGeneration]:
-        """Get user's video generations."""
-        query = select(VideoGeneration).where(
-            VideoGeneration.user_id == user_id
-        )
-        
+        query = select(VideoGeneration).where(VideoGeneration.user_id == user_id)
         if campaign_id:
             query = query.where(VideoGeneration.campaign_id == campaign_id)
-        
         query = query.order_by(VideoGeneration.created_at.desc())
         query = query.limit(limit).offset(offset)
-        
         result = await db.execute(query)
         return list(result.scalars().all())
 
@@ -336,23 +283,23 @@ class VideoGenerationService:
         limit: int = 20,
         offset: int = 0,
     ) -> list[VideoGeneration]:
-        """Get public video generations from all users (Community Feed)."""
-        query = select(VideoGeneration).where(
-            VideoGeneration.status == VideoStatus.COMPLETED,
-            VideoGeneration.is_public == 1,
-            VideoGeneration.video_url.isnot(None)
+        query = (
+            select(VideoGeneration)
+            .where(
+                VideoGeneration.status == VideoStatus.COMPLETED,
+                VideoGeneration.is_public == 1,
+                VideoGeneration.video_url.isnot(None),
+            )
+            .order_by(VideoGeneration.created_at.desc())
+            .limit(limit)
+            .offset(offset)
         )
-        
-        query = query.order_by(VideoGeneration.created_at.desc())
-        query = query.limit(limit).offset(offset)
-        
         result = await db.execute(query)
         return list(result.scalars().all())
-    
+
     async def check_kling_available(self) -> bool:
-        """Check if Kling AI service is available."""
         return await kling_client.check_available()
-    
+
     async def upload_user_video(
         self,
         db: AsyncSession,
@@ -364,84 +311,65 @@ class VideoGenerationService:
         campaign_id: Optional[uuid.UUID] = None,
         is_public: bool = True,
     ) -> VideoGeneration:
-        """
-        Upload a user video to S3 and create a database record.
-        
-        This is for user-uploaded videos (from gallery, camera, etc.),
-        NOT for AI-generated videos.
-        """
         import boto3
         import os
-        
-        # Generate unique S3 key
+
         video_id = uuid.uuid4()
-        ext = filename.rsplit('.', 1)[-1] if '.' in filename else 'mp4'
+        ext = filename.rsplit(".", 1)[-1] if "." in filename else "mp4"
         s3_key = f"videos/{user.id}/{video_id}/video.{ext}"
-        
-        # Get S3/LocalStack configuration
         s3_endpoint = os.getenv("AWS_ENDPOINT_URL", "http://localhost:4566")
         s3_bucket = os.getenv("S3_BUCKET_MEDIA", "campaia-dev-media")
         aws_region = os.getenv("AWS_REGION", "eu-central-1")
-        
-        # Create S3 client
         s3_client = boto3.client(
-            's3',
+            "s3",
             endpoint_url=s3_endpoint,
             aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID", "test"),
             aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY", "test"),
             region_name=aws_region,
         )
-        
-        # Ensure bucket exists (for LocalStack)
         try:
             s3_client.head_bucket(Bucket=s3_bucket)
         except Exception:
             try:
                 s3_client.create_bucket(
                     Bucket=s3_bucket,
-                    CreateBucketConfiguration={'LocationConstraint': aws_region}
+                    CreateBucketConfiguration={"LocationConstraint": aws_region},
                 )
-            except Exception as e:
-                logger.warning(f"Could not create bucket: {e}")
-        
-        # Upload to S3
+            except Exception as ex:
+                logger.warning("Bucket create: %s", ex)
         s3_client.put_object(
             Bucket=s3_bucket,
             Key=s3_key,
             Body=file_content,
             ContentType=content_type,
         )
-        
-        # Generate public URL
         if "localhost" in s3_endpoint or "localstack" in s3_endpoint:
             video_url = f"{s3_endpoint}/{s3_bucket}/{s3_key}"
         else:
             video_url = f"https://{s3_bucket}.s3.{aws_region}.amazonaws.com/{s3_key}"
-        
-        # Create database record
         video_record = VideoGeneration(
             id=video_id,
             user_id=user.id,
             campaign_id=campaign_id,
             prompt=title or f"User uploaded: {filename}",
-            duration=VideoDuration.SHORT,  # Default
-            quality=VideoQuality.STANDARD,  # Default
-            status=VideoStatus.COMPLETED,  # Already uploaded
+            duration=VideoDuration.SHORT,
+            quality=VideoQuality.STANDARD,
+            video_provider=VideoProviderId.UPLOAD.value,
+            provider_used=VideoProviderId.UPLOAD.value,
+            fallback_used=False,
+            aspect_ratio="9:16",
+            status=VideoStatus.COMPLETED,
             video_url=video_url,
             s3_key=s3_key,
             file_size_bytes=len(file_content),
-            tokens_spent=0,  # No tokens for upload
+            tokens_spent=0,
             is_public=1 if is_public else 0,
             title=title,
             progress_percent=100,
         )
-        
         db.add(video_record)
         await db.commit()
         await db.refresh(video_record)
-        
-        logger.info(f"User video uploaded: {video_id} by user {user.id}")
-        
         return video_record
 
     async def delete_video(
@@ -450,7 +378,6 @@ class VideoGenerationService:
         video_id: uuid.UUID,
         user_id: uuid.UUID,
     ) -> bool:
-        """Delete a video generation record and its storage."""
         result = await db.execute(
             select(VideoGeneration).where(
                 VideoGeneration.id == video_id,
@@ -460,9 +387,6 @@ class VideoGenerationService:
         video = result.scalar_one_or_none()
         if not video:
             return False
-        
-        # TODO: Delete from S3 if s3_key exists
-        
         await db.delete(video)
         await db.commit()
         return True
@@ -474,7 +398,6 @@ class VideoGenerationService:
         user_id: uuid.UUID,
         title: str,
     ) -> Optional[VideoGeneration]:
-        """Update video title."""
         result = await db.execute(
             select(VideoGeneration).where(
                 VideoGeneration.id == video_id,
@@ -484,13 +407,10 @@ class VideoGenerationService:
         video = result.scalar_one_or_none()
         if not video:
             return None
-        
         video.title = title
         await db.commit()
         await db.refresh(video)
         return video
 
 
-# Singleton instance
 video_service = VideoGenerationService()
-

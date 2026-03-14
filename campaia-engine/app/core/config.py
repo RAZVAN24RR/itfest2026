@@ -108,6 +108,9 @@ class Settings(BaseSettings):
     # ============================================
     kling_api_key: str = Field(default="", description="Kling AI API key")
     kling_api_secret: str = Field(default="", description="Kling AI API secret")
+    runway_api_key: str = Field(default="", description="Runway API (optional)")
+    pika_api_key: str = Field(default="", description="Pika API (optional)")
+    stable_video_url: str = Field(default="", description="Local Stable Video endpoint (optional)")
 
     # ============================================
     # External APIs - TikTok (Model Centralizat - Contul Campaia)

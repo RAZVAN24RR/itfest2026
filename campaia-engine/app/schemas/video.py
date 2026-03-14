@@ -1,7 +1,5 @@
 """
 Campaia Engine - Video Schemas
-
-Pydantic schemas for video generation endpoints.
 """
 
 from typing import Optional
@@ -11,7 +9,6 @@ from pydantic import BaseModel, Field
 
 
 class VideoStatusEnum(str, Enum):
-    """Video generation status."""
     PENDING = "PENDING"
     PROCESSING = "PROCESSING"
     UPLOADING = "UPLOADING"
@@ -20,37 +17,46 @@ class VideoStatusEnum(str, Enum):
 
 
 class VideoQualityEnum(str, Enum):
-    """Video quality options."""
-    STANDARD = "STANDARD"      # 720p
-    PROFESSIONAL = "PROFESSIONAL"  # 1080p
+    STANDARD = "STANDARD"
+    PROFESSIONAL = "PROFESSIONAL"
 
 
 class VideoDurationEnum(str, Enum):
-    """Video duration options."""
-    SHORT = "5"    # 5 seconds
-    LONG = "10"    # 10 seconds
+    SHORT = "5"
+    LONG = "10"
+
+
+class VideoProviderEnum(str, Enum):
+    """Requested generation engine (UX maps to these)."""
+    KLING = "KLING"
+    RUNWAY = "RUNWAY"
+    PIKA = "PIKA"
+    STABLE_VIDEO = "STABLE_VIDEO"
 
 
 class VideoGenerateRequest(BaseModel):
-    """Request to generate a video."""
-    prompt: str = Field(..., min_length=10, description="Video generation prompt/description")
-    script: Optional[str] = Field(None, description="AI script to use for the video")
-    campaign_id: Optional[str] = Field(None, description="Associated campaign ID")
-    duration: VideoDurationEnum = Field(default=VideoDurationEnum.SHORT, description="Video duration (5 or 10 seconds)")
-    quality: VideoQualityEnum = Field(default=VideoQualityEnum.STANDARD, description="Video quality")
+    prompt: str = Field(..., min_length=10)
+    script: Optional[str] = None
+    campaign_id: Optional[str] = None
+    duration: VideoDurationEnum = VideoDurationEnum.SHORT
+    quality: VideoQualityEnum = VideoQualityEnum.STANDARD
+    provider: VideoProviderEnum = Field(
+        default=VideoProviderEnum.KLING,
+        description="Video generation style / primary provider",
+    )
 
 
 class VideoGenerateResponse(BaseModel):
-    """Response after initiating video generation."""
     id: str
     status: VideoStatusEnum
     estimated_time_seconds: int
     tokens_cost: int
     message: str
+    provider_requested: str
+    fallback_note: Optional[str] = None
 
 
 class VideoStatusResponse(BaseModel):
-    """Response with video generation status."""
     id: str
     status: VideoStatusEnum
     progress_percent: int
@@ -61,10 +67,13 @@ class VideoStatusResponse(BaseModel):
     quality: str
     tokens_spent: int
     created_at: str
+    provider_requested: str = "KLING"
+    provider_used: Optional[str] = None
+    fallback_used: bool = False
+    aspect_ratio: str = "9:16"
 
 
 class VideoListItem(BaseModel):
-    """Video item for listing."""
     id: str
     status: VideoStatusEnum
     video_url: Optional[str] = None
@@ -77,16 +86,18 @@ class VideoListItem(BaseModel):
     campaign_id: Optional[str] = None
     user_id: Optional[str] = None
     title: Optional[str] = None
+    provider_requested: str = "KLING"
+    provider_used: Optional[str] = None
+    fallback_used: bool = False
+    aspect_ratio: str = "9:16"
 
 
 class VideoListResponse(BaseModel):
-    """Response with list of videos."""
     videos: list[VideoListItem]
     total: int
 
 
 class VideoUploadResponse(BaseModel):
-    """Response after uploading a user video."""
     id: str
     video_url: str
     thumbnail_url: Optional[str] = None
@@ -95,9 +106,14 @@ class VideoUploadResponse(BaseModel):
     message: str
 
 
-# Token costs for video generation
+class VideoProviderInfo(BaseModel):
+    id: str
+    label: str
+    description: str
+    token_multiplier: float
+
+
 VIDEO_TOKEN_COSTS = {
-    # (duration, quality): cost
     ("5", "STANDARD"): 50,
     ("5", "PROFESSIONAL"): 80,
     ("10", "STANDARD"): 80,
@@ -106,5 +122,19 @@ VIDEO_TOKEN_COSTS = {
 
 
 def get_video_token_cost(duration: str, quality: str) -> int:
-    """Get token cost for video generation."""
     return VIDEO_TOKEN_COSTS.get((duration, quality), 50)
+
+
+def get_video_cost_with_provider(
+    duration: str,
+    quality: str,
+    provider_id: str,
+) -> int:
+    from app.services.video_providers.base import VideoProviderId, provider_token_multiplier
+
+    base = get_video_token_cost(duration, quality)
+    try:
+        p = VideoProviderId(provider_id)
+    except ValueError:
+        p = VideoProviderId.KLING
+    return max(15, int(round(base * provider_token_multiplier(p))))

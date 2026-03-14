@@ -242,6 +242,11 @@ const VideoGallery: React.FC<VideoGalleryProps> = ({
 
                             {/* Info */}
                             <div className="p-3">
+                                <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide mb-1">
+                                  Generated with: {video.provider_used === 'UPLOAD' ? 'Upload' : (video.provider_used || video.provider_requested || 'Kling AI')}
+                                  {video.fallback_used ? ' · fallback' : ''}
+                                </p>
+                                <p className="text-[10px] text-slate-400 mb-1">{video.duration}s · {video.aspect_ratio || '9:16'}</p>
                                 <p className="text-sm text-slate-700 font-medium line-clamp-2 mb-2">
                                     {video.prompt}
                                 </p>
