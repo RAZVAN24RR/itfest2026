@@ -30,7 +30,9 @@ import {
     Clock,
     Calendar,
     ToggleLeft,
-    ToggleRight
+    ToggleRight,
+    Volume2,
+    VolumeX
 } from 'lucide-react';
 import { getSchedule, saveSchedule, deleteSchedule, DAY_LABELS_RO, DAY_LABELS_EN, TIME_SLOTS, type CampaignSchedule as ScheduleType, type ScheduleRequest } from '../../services/schedulerService';
 import { COMMUNITY_EVENT_TYPES } from './NewCampaign';
@@ -64,6 +66,7 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
     const [video, setVideo] = useState<VideoListItem | null>(null);
     const [isPublishing, setIsPublishing] = useState(false);
     const [isVideoPlaying, setIsVideoPlaying] = useState(true);
+    const [isVideoMuted, setIsVideoMuted] = useState(true);
     const videoRef = useRef<HTMLVideoElement>(null);
 
     // Scheduler state
@@ -652,7 +655,7 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                                         src={video.video_url}
                                         className="w-full h-full object-cover cursor-pointer"
                                         autoPlay
-                                        muted
+                                        muted={isVideoMuted}
                                         loop
                                         playsInline
                                         poster={video.thumbnail_url || undefined}
@@ -696,6 +699,22 @@ export default function CampaignDetails({ campaignId, onBack, onDeleted, lang }:
                                                 </div>
                                             </div>
                                         )}
+
+                                        {/* Sound toggle */}
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                const next = !isVideoMuted;
+                                                setIsVideoMuted(next);
+                                                if (videoRef.current) {
+                                                    videoRef.current.muted = next;
+                                                    if (!next) videoRef.current.volume = 1;
+                                                }
+                                            }}
+                                            className="absolute top-12 right-3 z-20 w-8 h-8 rounded-full bg-black/40 backdrop-blur flex items-center justify-center"
+                                        >
+                                            {isVideoMuted ? <VolumeX size={14} className="text-white" /> : <Volume2 size={14} className="text-white" />}
+                                        </button>
 
                                         {/* Right side actions */}
                                         <div className="absolute right-3 bottom-24 flex flex-col items-center gap-5 text-white">

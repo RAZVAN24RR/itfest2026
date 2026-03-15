@@ -55,12 +55,30 @@ const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({
         };
     }, [isOpen, onClose]);
 
-    // Reset video when modal opens
+    // Play video with sound when modal opens
     useEffect(() => {
-        if (isOpen && videoRef.current) {
-            videoRef.current.currentTime = 0;
+        if (!isOpen || !videoRef.current) return;
+        const v = videoRef.current;
+        v.currentTime = 0;
+        v.muted = false;
+        v.volume = 1;
+
+        const tryPlay = () => {
+            v.muted = false;
+            v.volume = 1;
+            v.play().catch(() => {
+                v.muted = true;
+                v.play().catch(() => {});
+            });
+        };
+
+        if (v.readyState >= 2) {
+            tryPlay();
+        } else {
+            v.addEventListener('canplay', tryPlay, { once: true });
+            return () => v.removeEventListener('canplay', tryPlay);
         }
-    }, [isOpen]);
+    }, [isOpen, video?.id]);
 
     const handleCanPlay = useCallback(() => {
         setIsBuffering(false);
@@ -143,7 +161,6 @@ const VideoPreviewModal: React.FC<VideoPreviewModalProps> = ({
                         ref={videoRef}
                         src={video.video_url}
                         controls
-                        autoPlay
                         playsInline
                         preload="auto"
                         className="w-full max-h-[60vh] object-contain transition-opacity duration-300"

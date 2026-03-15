@@ -1,10 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bot, Send, Loader2, Sparkles, User } from 'lucide-react';
 import { sendMessage, type ChatMessage } from '../../services/agentService';
-import { useLanguage } from '../../context/LanguageContext';
 
 export default function CampaiaAgent() {
-  const { language } = useLanguage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -14,20 +12,7 @@ export default function CampaiaAgent() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const t = language === 'ro' ? {
-    title: 'Campaia Agent',
-    subtitle: 'Asistentul tău AI de marketing',
-    placeholder: 'Scrie un mesaj...',
-    welcome: 'Sunt asistentul tău de marketing. Cu ce te pot ajuta?',
-    tips: [
-      { icon: '📅', text: 'Planificarea campaniilor', desc: 'când și cum să le lansezi' },
-      { icon: '⏰', text: 'Programare automată', desc: 'setează zilele și orele active' },
-      { icon: '💰', text: 'Optimizare buget', desc: 'ROI maxim pe fiecare leu' },
-      { icon: '🎬', text: 'Strategii video TikTok', desc: 'conținut care prinde' },
-      { icon: '📊', text: 'Analiză performanță', desc: 'ce merge, ce nu' },
-    ],
-    error: 'Eroare la comunicarea cu agentul. Verifică cheia Gemini API.',
-  } : {
+  const t = {
     title: 'Campaia Agent',
     subtitle: 'Your AI marketing assistant',
     placeholder: 'Type a message...',
