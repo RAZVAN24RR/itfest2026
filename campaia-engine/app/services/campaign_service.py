@@ -132,26 +132,31 @@ class CampaignService:
         )
 
     async def get_map_markers(self) -> list[CampaignMapMarker]:
-        """Get all campaigns formatted as map markers with deterministic mock locations."""
+        """Map markers + TikTok-style metrics (DB stats or deterministic)."""
+        EVENT_LABELS = {
+            "blood_donation": "Donare sânge",
+            "hackathon": "Hackathon",
+            "volunteering": "Voluntariat",
+            "recycling": "Reciclare",
+            "community_gathering": "Adunare comunitară",
+            "charity": "Strângere fonduri",
+            "education": "Educație",
+            "health": "Sănătate",
+            "sports": "Sport comunitar",
+            "culture": "Cultură",
+            "animal_rescue": "Animale",
+            "disaster_relief": "Urgențe",
+            "marathon": "Maraton",
+        }
         campaigns, _ = await self.repo.get_all_campaigns()
-        
         markers = []
         for c in campaigns:
-            # Deterministic mock data based on ID
             id_str = str(c.id)
-            seed = sum(ord(char) for char in id_str)
-            
-            # Categories based on content or random for demo
-            categories = ["Blood Donation", "Recycling", "Education", "Community Event", "Charity"]
-            category = categories[seed % len(categories)]
-            
-            # Use real data if available
+            seed = sum(ord(ch) for ch in id_str)
             if c.lat is not None and c.lng is not None:
-                lat = float(c.lat)
-                lng = float(c.lng)
-                city_name = c.city or "Unknown"
+                lat, lng = float(c.lat), float(c.lng)
+                city_name = c.city or "—"
             else:
-                # Fallback to deterministic mock data
                 cities = [
                     (44.4268, 26.1025, "București"),
                     (46.7712, 23.5901, "Cluj-Napoca"),
@@ -162,21 +167,35 @@ class CampaignService:
                 city_lat, city_lng, city_name = cities[seed % len(cities)]
                 lat = city_lat + (seed % 100) * 0.001 - 0.05
                 lng = city_lng + (seed % 100) * 0.001 - 0.05
-            
-            title = c.name or f"Campaign in {city_name}"
-            estimated_reach = int(c.budget) * 100 + (seed % 500)
-            
-            markers.append(CampaignMapMarker(
-                id=c.id,
-                title=title,
-                lat=lat,
-                lng=lng,
-                city=city_name,
-                category=category,
-                estimated_reach=estimated_reach,
-                video_url=c.video_url
-            ))
-            
+            ev = (c.event_type or "").strip() or None
+            category = EVENT_LABELS.get(ev, ev or "Campanie comunitară")
+            title = c.name or f"{category} · {city_name}"
+            impressions = c.stats_impressions if c.stats_impressions is not None else (8000 + (seed * 7919) % 92000)
+            clicks = c.stats_clicks if c.stats_clicks is not None else max(80, impressions // 200 + seed % 400)
+            shares = c.stats_shares if c.stats_shares is not None else max(10, clicks // 8 + seed % 120)
+            spend = float(c.stats_spend_ron) if c.stats_spend_ron is not None else round(float(c.budget) * 0.35 + (seed % 50), 2)
+            ctr = round(100.0 * clicks / impressions, 2) if impressions else 0.0
+            estimated_reach = impressions
+            created = c.created_at.isoformat() if getattr(c, "created_at", None) else None
+            markers.append(
+                CampaignMapMarker(
+                    id=c.id,
+                    title=title,
+                    lat=lat,
+                    lng=lng,
+                    city=city_name,
+                    category=category,
+                    event_type=ev,
+                    estimated_reach=estimated_reach,
+                    video_url=c.video_url,
+                    impressions=impressions,
+                    clicks=clicks,
+                    shares=shares,
+                    spend_ron=spend,
+                    ctr_pct=ctr,
+                    created_at=created,
+                )
+            )
         return markers
 
     async def update_campaign(

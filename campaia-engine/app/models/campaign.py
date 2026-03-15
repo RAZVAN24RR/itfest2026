@@ -85,6 +85,12 @@ class Campaign(BaseModel):
     lng: Mapped[float | None] = mapped_column(Numeric(10, 6), nullable=True)
     city: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
+    # Demo / TikTok Ads–style metrics (sandbox or seeded)
+    stats_impressions: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    stats_clicks: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    stats_shares: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    stats_spend_ron: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
+
     # Video creative linked to this campaign
     video_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),

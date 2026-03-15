@@ -104,7 +104,7 @@ class CampaignScriptUpdate(BaseModel):
 
 class CampaignMapMarker(BaseModel):
     """Schema for campaign map display."""
-    
+
     id: UUID
     title: str
     lat: float
@@ -114,5 +114,11 @@ class CampaignMapMarker(BaseModel):
     event_type: str | None = None
     estimated_reach: int
     video_url: str | None = None
+    impressions: int = 0
+    clicks: int = 0
+    shares: int = 0
+    spend_ron: float = 0.0
+    ctr_pct: float = 0.0
+    created_at: str | None = None
 
 

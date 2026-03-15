@@ -78,8 +78,15 @@ export interface CampaignMapMarker {
     lng: number;
     city?: string;
     category: string;
+    event_type?: string | null;
     estimated_reach: number;
     video_url: string | null;
+    impressions: number;
+    clicks: number;
+    shares: number;
+    spend_ron: number;
+    ctr_pct: number;
+    created_at?: string | null;
 }
 
 /**

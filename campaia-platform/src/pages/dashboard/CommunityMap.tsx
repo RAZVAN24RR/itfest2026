@@ -2,29 +2,38 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Users, Video, Target, Filter, Activity } from 'lucide-react';
+import { Users, Video, Filter, Activity } from 'lucide-react';
 import campaignService, { type CampaignMapMarker } from '../../services/campaignService';
 import { useLanguage } from '../../context/LanguageContext';
 
-// Create custom div icons based on category
-const createEmojiIcon = (category: string) => {
-    let emoji = '📍';
-    let bgColor = 'bg-blue-500';
+const EVENT_ICON: Record<string, { emoji: string; bg: string }> = {
+    blood_donation: { emoji: '🩸', bg: 'bg-red-500' },
+    hackathon: { emoji: '💻', bg: 'bg-blue-500' },
+    volunteering: { emoji: '🤝', bg: 'bg-green-500' },
+    recycling: { emoji: '♻️', bg: 'bg-emerald-600' },
+    community_gathering: { emoji: '🏘️', bg: 'bg-amber-500' },
+    charity: { emoji: '💛', bg: 'bg-yellow-500' },
+    education: { emoji: '📚', bg: 'bg-indigo-500' },
+    health: { emoji: '🏥', bg: 'bg-pink-500' },
+    sports: { emoji: '🏃', bg: 'bg-orange-500' },
+    culture: { emoji: '🎭', bg: 'bg-purple-500' },
+    animal_rescue: { emoji: '🐾', bg: 'bg-teal-500' },
+    disaster_relief: { emoji: '🆘', bg: 'bg-rose-600' },
+    marathon: { emoji: '🏅', bg: 'bg-sky-500' },
+};
 
-    if (category.toLowerCase().includes('blood') || category.toLowerCase().includes('donare') || category.toLowerCase().includes('sânge')) {
-        emoji = '🩸';
-        bgColor = 'bg-red-500';
-    } else if (category.toLowerCase().includes('recycle') || category.toLowerCase().includes('reciclare')) {
-        emoji = '♻️';
-        bgColor = 'bg-green-500';
-    } else if (category.toLowerCase().includes('edu') || category.toLowerCase().includes('școală')) {
-        emoji = '📚';
-        bgColor = 'bg-yellow-500';
-    } else if (category.toLowerCase().includes('charity') || category.toLowerCase().includes('caritate')) {
-        emoji = '🤝';
-        bgColor = 'bg-purple-500';
+function createEmojiIcon(eventType: string | null | undefined, category: string) {
+    const ev = (eventType || '').trim();
+    const mapped = ev ? EVENT_ICON[ev] : null;
+    let emoji = mapped?.emoji ?? '📍';
+    let bgColor = mapped?.bg ?? 'bg-slate-500';
+    if (!mapped) {
+        const c = category.toLowerCase();
+        if (c.includes('sânge') || c.includes('donare')) { emoji = '🩸'; bgColor = 'bg-red-500'; }
+        else if (c.includes('recicl')) { emoji = '♻️'; bgColor = 'bg-green-500'; }
+        else if (c.includes('edu')) { emoji = '📚'; bgColor = 'bg-indigo-500'; }
+        else if (c.includes('fond') || c.includes('carit')) { emoji = '💛'; bgColor = 'bg-yellow-500'; }
     }
-
     return L.divIcon({
         className: 'custom-emoji-icon',
         html: `<div class="${bgColor} w-8 h-8 rounded-full flex items-center justify-center text-lg shadow-lg border-2 border-white transform transition-transform hover:scale-110">${emoji}</div>`,
@@ -70,7 +79,8 @@ export default function CommunityMap() {
         return matchCategory && matchCity;
     });
 
-    const totalEstimatedReach = filteredMarkers.reduce((acc, curr) => acc + curr.estimated_reach, 0);
+    const totalImpressions = filteredMarkers.reduce((a, m) => a + (m.impressions ?? m.estimated_reach ?? 0), 0);
+    const totalClicks = filteredMarkers.reduce((a, m) => a + (m.clicks ?? 0), 0);
 
     const t = {
         ro: {
@@ -79,11 +89,13 @@ export default function CommunityMap() {
             filters: "Filtrează Campaniile",
             allCategories: "Toate Categoriile",
             allCities: "Toate Orașele",
-            reach: "Reach Estimat Total",
+            reach: "Impressions (TikTok Ads)",
             active: "Campanii Active",
             target: "Target:",
             reachLabel: "Reach:",
-            video: "Video Generat"
+            video: "Video Generat",
+            clicksLabel: "Click-uri",
+            tiktok: "Metrici TikTok Ads (sandbox/demo)",
         },
         en: {
             title: "Community Map",
@@ -91,11 +103,13 @@ export default function CommunityMap() {
             filters: "Filter Campaigns",
             allCategories: "All Categories",
             allCities: "All Cities",
-            reach: "Total Estimated Reach",
+            reach: "Impressions (TikTok Ads)",
             active: "Active Campaigns",
             target: "Target:",
             reachLabel: "Reach:",
-            video: "Generated Video"
+            video: "Generated Video",
+            clicksLabel: "Clicks",
+            tiktok: "TikTok Ads metrics (sandbox/demo)",
         }
     }[language];
 
@@ -137,7 +151,8 @@ export default function CommunityMap() {
                     <div className="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-full -mr-10 -mt-10 opacity-50" />
                     <div className="relative">
                         <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">{t.reach}</p>
-                        <p className="text-4xl font-black text-slate-900 mt-1">{totalEstimatedReach.toLocaleString()}</p>
+                        <p className="text-4xl font-black text-slate-900 mt-1">{totalImpressions.toLocaleString()}</p>
+                        <p className="text-xs font-bold text-slate-500 mt-1">{t.clicksLabel}: {totalClicks.toLocaleString()}</p>
                     </div>
                     <div className="relative w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600">
                         <Users size={24} />
@@ -193,22 +208,20 @@ export default function CommunityMap() {
                             <Marker
                                 key={marker.id}
                                 position={[marker.lat, marker.lng]}
-                                icon={createEmojiIcon(marker.category)}
+                                icon={createEmojiIcon(marker.event_type, marker.category)}
                             >
                                 <Popup className="custom-popup">
                                     <div className="p-1 min-w-[200px]">
                                         <h3 className="font-black text-base text-slate-900 leading-tight mb-1">{marker.title}</h3>
-                                        <p className="text-[10px] uppercase tracking-widest font-bold text-blue-600 mb-3">{marker.category}</p>
+                                        <p className="text-[10px] uppercase tracking-widest font-bold text-blue-600 mb-1">{marker.category}</p>
+                                        <p className="text-[9px] text-slate-400 mb-2">{t.tiktok}</p>
 
-                                        <div className="space-y-2 mb-3">
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <Target size={14} className="text-slate-400" />
-                                                <span className="text-slate-600 font-medium">18-35 (Estimat)</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <Users size={14} className="text-slate-400" />
-                                                <span className="text-green-600 font-bold">{marker.estimated_reach.toLocaleString()} {t.reachLabel.replace(':', '')}</span>
-                                            </div>
+                                        <div className="space-y-1.5 mb-3 text-xs">
+                                            <div className="flex justify-between"><span className="text-slate-500">Impressions</span><span className="font-bold">{(marker.impressions ?? marker.estimated_reach).toLocaleString()}</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-500">Clicks</span><span className="font-bold text-blue-600">{(marker.clicks ?? 0).toLocaleString()}</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-500">CTR</span><span className="font-bold">{(marker.ctr_pct ?? 0).toFixed(2)}%</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-500">Shares</span><span className="font-bold">{(marker.shares ?? 0).toLocaleString()}</span></div>
+                                            <div className="flex justify-between"><span className="text-slate-500">Spend</span><span className="font-bold">{Number(marker.spend_ron ?? 0).toFixed(2)} RON</span></div>
                                         </div>
 
                                         {marker.video_url && (

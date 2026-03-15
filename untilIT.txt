@@ -1,152 +1,153 @@
 ====================================================================
 CAMPAIA — AI pentru Mobilizarea Comunităților (ITFest 2026)
 Ce s-a implementat până acum — Rezumat complet
-Ultima actualizare: 14 Martie 2026 (sync cu repo main, push pe origin)
+Ultima actualizare: 15 Martie 2026 (stare curentă proiect / cod local)
 ====================================================================
 
 ## DESCRIERE GENERALĂ
 
-Campaia este o platformă bazată pe Inteligență Artificială care ajută ONG-uri, inițiative comunitare și proiecte locale (donare de sânge, reciclare, voluntariat etc.) să creeze campanii digitale eficiente pentru social media, în doar câteva minute.
+Campaia este o platformă AI pentru ONG-uri și inițiative locale (donare sânge,
+hackathon, voluntariat, maraton, reciclare etc.) care creează rapid campanii
+digitale pentru TikTok: scripturi, video, targeting, publicare sandbox și
+instrumente de planificare (scheduler + agent Gemini).
 
-Utilizatorul introduce câteva detalii despre campania sa (scop, public țintă, locație), iar platforma generează automat:
-- Scripturi video pentru TikTok / social media
-- Imagini promoționale
-- Videoclipuri gata de publicat
-- Hashtag-uri și strategii de distribuție
-- Recomandări pentru audiența țintă
+Track hackathon: **Community Problems** (ITFest 2026).
 
-## TECH STACK IMPLEMENTAT
+## TECH STACK
 
 ### Backend (campaia-engine)
-- Framework: FastAPI (Python 3.12)
-- Bază de date: PostgreSQL 16 (async cu asyncpg)
-- ORM: SQLAlchemy 2.0 (async)
-- Migrații: Alembic
-- Cache: Redis 7
-- Autentificare: JWT (python-jose) + Google OAuth
-- Package manager: Poetry
+- FastAPI, Python 3.12, PostgreSQL 16 (asyncpg), SQLAlchemy 2.0, Alembic, Redis 7
+- JWT + Google OAuth, Poetry, Docker
 
 ### Frontend (campaia-platform)
-- Framework: React 19 cu TypeScript
-- Build tool: Vite
-- Styling: Tailwind CSS 4
-- Auth: @react-oauth/google
-- Mobile: Capacitor (suport pentru Android)
+- React 19, TypeScript, Vite, Tailwind CSS 4, Leaflet (hartă), Framer Motion (unde e folosit)
+- Capacitor (Android), @react-oauth/google
 
-### AI & Integrări externe
-- Ollama — LLM local pentru generare de text (scripturi, descrieri, hashtag-uri)
-- Kling AI — API extern pentru generare video (text-to-video, image-to-video)
-- AWS S3 — Stocare obiecte (LocalStack pentru dev)
-- Stripe — Procesare plăți (sistem de tokeni)
-- TikTok Ads API — Publicare campanii (sandbox sau production)
+### AI & integrări
+- **Ollama** — două „niveluri” în UI: **Llama 3.2** (1× tokeni) și **DeepSeek R1 8B** (2× tokeni);
+  timeout generos (ex. 300s) pentru modelul mare.
+- **Google Gemini** — **Campaia Agent** (chat marketing / planificare), model implicit
+  **gemini-2.5-flash** + fallback în cod; cheie: GEMINI_API_KEY; backend cu env_file .env.
+- **Kling AI** — video cloud; Runway/Pika — stub/fallback UX
+- **ModelScope local** — video pe GPU (STABLE_VIDEO_URL, serviciu separat)
+- Stripe, LocalStack S3, TikTok Ads API (sandbox)
 
 ### Infrastructură
-- Docker Compose — PostgreSQL, Redis, Backend, Frontend, LocalStack
-- Health checks pe servicii
-- Pornire locală: ./scripts/dev-start.sh (sau docker compose up -d)
-- Regulă Cursor (.cursor/rules/dev-workflow.mdc): după modificări utile — Docker live + commit-uri mici
+- Docker Compose: db, redis, backend (host network opțional), frontend, localstack
+- După modificări pe model DB: **alembic upgrade head** (ex. coloane noi pe campaigns)
 
 ====================================================================
 ## FUNCȚIONALITĂȚI IMPLEMENTATE (DETALIAT)
 ====================================================================
 
-### 1. AUTENTIFICARE & MANAGEMENT UTILIZATORI
-- Login email + parolă (bcrypt), Google OAuth, JWT persistent
-- Route-uri API protejate; redirect dashboard după login
-- Tipuri: INDIVIDUAL, BUSINESS (CUI, Reg. Com., adresă, oraș, județ, țară)
-- Flag profile completed
+### 1. AUTENTIFICARE & UTILIZATOR
+- Email/parolă, Google OAuth, JWT, tipuri INDIVIDUAL / BUSINESS
 
-### 2. SISTEM DE CAMPANII
-- CRUD complet; status: DRAFT → ACTIVE → PAUSED → COMPLETED / CANCELLED
-- Câmpuri: nume, URL destinație, buget, durată, descriere, city, lat, lng
-- Script AI, tokeni per campanie, paginare, filtrare status
-- Pagini: Overview, Campaign Details, New Campaign, History
+### 2. CAMPANII
+- CRUD, status DRAFT → ACTIVE → PAUSED → COMPLETED / CANCELLED
+- Câmpuri: nume, URL, buget, durată, descriere, **event_type** (tip eveniment comunitar),
+  **city, lat, lng** (hartă + creare campanie)
+- Script AI, TikTok IDs pe campanie, paginare
 
-### 3. GENERARE CONȚINUT AI (Ollama)
-- Scripturi TikTok (5 variante default), tonuri (profesional, casual, viral, funny)
-- RO/EN, hashtag-uri, audiență, punchline, prompturi Kling
-- Health Ollama
+### 3. TIPURI EVENIMENT COMUNITAR (event_type)
+- Selectabile la **Campanie nouă** (wizard): donare sânge, hackathon, voluntariat,
+  reciclare, adunare comunitară, fonduri, educație, sănătate, sport, cultură,
+  animale, urgențe, **maraton**, etc.
+- Afișate în **Overview** și **Detalii campanie**; **Campaia Agent** le cunoaște în prompt
 
-### 4. GENERARE VIDEO (multi-provider + Kling fallback + local GPU)
-- Stiluri UX cu modelul real vizibil:
-  • Fast generation — Kling v1.6 (cloud)
-  • Cinematic quality — Runway Gen-3 Alpha (cloud, stub)
-  • Social media style — Pika 1.0 (cloud, stub)
-  • Local AI (on your GPU) — ModelScope v1.7b (diffusers, fp16, GTX 1650 Ti 4GB VRAM)
-- Tokeni diferiți per stil; fallback automat pe Kling dacă alternativa nu e configurată/eșuează
-- Local video service: scripts/local_video_service.py (FastAPI pe port 8001)
-  • STABLE_VIDEO_URL=http://localhost:8001 în .env
-  • Dacă serviciul local e pornit: generare video pe GPU; altfel fallback Kling
-- DB: video_provider, provider_used, fallback_used, aspect_ratio 9:16, generation_duration_ms
-- My Videos / galerie arată model real (ex: Kling v1.6, ModelScope v1.7b) + fallback badge
+### 4. SCHEDULER CAMPANII
+- Model **CampaignSchedule**: zile săptămână, interval orar, fus, enable/disable
+- API **/api/v1/scheduler/{campaignId}** (GET/POST/DELETE)
+- UI în **Campaign Details**: program automat (zile + ore)
 
-### 5. TOKENI & STRIPE
-- Wallet, pachete (Starter 100/29 RON … Business 1500/299 RON)
-- Checkout, webhook, mock fără key; BuyTokens, Billing
+### 5. GENERARE AI (Ollama) — DUAL MODEL
+- Request-uri AI cu **ai_model**: **llama** | **deepseek**
+- Cost tokeni: baza ×1 (llama) sau ×2 (deepseek) pe: script, hashtag, audiență,
+  descriere marketing, prompt Kling
+- UI selector model în pasul de generare (New Campaign)
 
-### 6. FACTURARE
-- Facturi CMP-YYYY-XXXX, PDF, S3, email, InvoiceList
+### 6. CAMPAIA AGENT (GEMINI)
+- Tab **Campaia Agent**: chat cu context Campaia (pagini, tokens, video, scheduler,
+  tipuri eveniment, TikTok sandbox)
+- API **POST /api/v1/agent/chat**; erori afișate clar (cheie, model, etc.)
+- Config: GEMINI_API_KEY, GEMINI_MODEL (default gemini-2.5-flash)
 
-### 7. AUDIENCE TARGETING
-- AudienceTarget; DemographicSelector, GeoSelector, SimpleTargetingSelector
+### 7. VIDEO (Kling + local + fallback)
+- Galerie, stiluri, tokeni per provider; local ModelScope dacă STABLE_VIDEO_URL e up
 
-### 8. TIKTOK ADS (SANDBOX / PRODUCTION)
-- Client + publisher: upload video URL → campanie TikTok → ad group → ad
-- API: /api/v1/tiktok/status, /publish, pause/resume, campaigns list, metrics (restrict)
-- Campanie: tiktok_campaign_id, tiktok_adgroup_id, tiktok_ad_id
-- Publicare din Campaign Details: necesită video cu URL public (S3); buton activ doar cu video_url
-- Env backend (.env + docker-compose): TIKTOK_ACCESS_TOKEN, TIKTOK_ADVERTISER_ID, TIKTOK_APP_ID, TIKTOK_APP_SECRET, TIKTOK_ENVIRONMENT (sandbox|production), TIKTOK_METRICS_ADMIN_EMAILS (listă emailuri pentru GET /tiktok/metrics)
-- Documentație flux sandbox: docs/TIKTOK_SANDBOX.md
-- Pagina Integrations: status cont, Campaign Explorer (campanii din API), checklist publicare sandbox; metrici globale doar pentru admini (restul vede mesaj, fără erori în UI)
+### 8. TOKENI & STRIPE
+- Wallet, pachete, Checkout, Billing, Buy Tokens
 
-### 9. ANALYTICS DASHBOARD
-- Recharts: views, clicks, CPA, shares; timeframe; comparare campanii (reach / ROAS)
+### 9. FACTURARE
+- PDF facturi; **CAMPAIA SRL** (nu DEVDELTA) în PDF și email
+- CMP-YYYY-XXXX, S3, listă facturi
 
-### 10. COMMUNITY MAP
-- Leaflet, markere campanii active, filtre categorie/oraș, lat/lng, pop-up-uri
+### 10. TARGETING
+- Țări + orașe (RO multi-oras), SimpleTargetingSelector, TikTok mapping
 
-### 11. PAGINI FRONTEND
-- Landing, Concept, Privacy, Terms, Signin/Signup
-- Dashboard: Overview, New Campaign, Campaign Details, My Videos, Analytics, Billing, Buy Tokens, History, Integrations, Profile, Settings, Community Map
+### 11. TIKTOK ADS
+- Publicare sandbox, pause/resume, Integrations (admin), metrici restricționate
 
-### 12. COMPONENTE UI (esențial)
-- Navbar, Footer (hackathon, fără referințe academice), CommunityFeed, TokenBalance, ProfileTypeSelector
-- Video / Billing / Targeting — ca mai sus
+### 12. COMMUNITY MAP (HARTĂ)
+- **GET /api/v1/campaigns/map** — markere pentru toate campaniile (fără auth pe hartă)
+- Leaflet, filtre categorie + oraș
+- Iconițe pe **event_type**; popup: **Impressions, Clicks, CTR, Shares, Spend (RON)**
+  — date din DB (**stats_***) sau calculate determinist dacă lipsesc
+- Carduri sus: număr campanii filtrate, total impressions + clicks
 
-### 13. SERVICII FRONTEND
-- api.ts, aiService, campaignService, paymentService, targetingService, tiktokService, videoService
+### 13. METRICI DEMO PE CAMPANII (TikTok-style)
+- Migrație **c3d4e5f6a7b8**: campaigns.**stats_impressions**, **stats_clicks**,
+  **stats_shares**, **stats_spend_ron**
+- **Obligatoriu** după deploy: `alembic upgrade head` — altfel listarea campaniilor
+  crapă (coloane lipsă)
+- Script seed (opțional): **campaia-engine/scripts/seed_community_map_demo.py**
+  — campanii demo pe cont **razvanandreipasaran@gmail.com**, categorii + orașe diverse
 
-### 14. MODELE DB
-- User, Campaign, Wallet, TokenTransaction, VideoGeneration, AudienceTarget, Invoice
+### 14. ANALYTICS (pagină dashboard)
+- Legată corect în Dashboard (în trecut randa gol)
+- **Fără Recharts** pe această pagină (evită crash React 19 / chunk)
+- Interval **calendar De la / Până la** + „Ultimele 30 zile”
+- Date din **getMapMarkers()**: agregat impressions, clicks, CTR, spend; tabel campanii;
+  bare pe tip; fără secțiune „For judges”
+- Mesaj: agregat din campaniile de pe hartă (stil TikTok Ads demo)
 
-### 15. DEVOPS
-- docker-compose; .env.example actualizat (TikTok + TIKTOK_METRICS_ADMIN_EMAILS)
-- Health: /health, /ready
+### 15. PAGINI DASHBOARD
+- Overview, New Campaign, Details, My Videos, **Analytics**, **Community Map**,
+  **Campaia Agent**, Billing, Buy Tokens, Profile, Settings, Integrations (admin)
 
-====================================================================
-## CE NU E ÎNCĂ / PARȚIAL
-====================================================================
+### 16. MODELE DB (esențial)
+- User, Campaign (+ event_type, lat, lng, city, **stats_***), CampaignSchedule,
+  Wallet, TokenTransaction, VideoGeneration, AudienceTarget, Invoice
 
-- Meta Ads / Google Ads — UI Coming Soon (Q3/Q4 2026), fără backend
-- AI Impact Prediction (reach) — parțial / mock posibil
-- Email — limitat; notificări real-time — fără WebSocket
-- Tests — directoare goale sau minime
-- /ready — verificare DB opțională (TODO vechi)
-
-====================================================================
-## URMĂTORII PAȚI (PRODUS)
-====================================================================
-
-1. Publicare stabilă pe TikTok Sandbox (token + advertiser + video HTTPS)
-2. AI Impact Prediction / demo polish
-3. Community Feed îmbunătățit
-4. WebSocket progres video (opțional)
+### 17. API URI importante
+- Prefix **/api/v1/** pentru agent, scheduler, campaigns, etc.
+- Frontend: VITE_API_URL către backend (ex. http://localhost:8000)
 
 ====================================================================
-## DIRECȚIE MULTI-PLATFORM
+## CE NU E / PARȚIAL
 ====================================================================
 
-- TikTok: integrare activă (sandbox)
-- Meta / Google: UI roadmap, fără publisher încă
+- Metrici TikTok **reale** pe fiecare campanie — în producție ar lega Reporting API;
+  acum: coloane demo + determinist unde e gol
+- Meta / Google Ads — doar roadmap UI
+- WebSocket progres video — opțional
+- Teste automate — minime
+
+====================================================================
+## OPERAȚIUNI RECURENTE (DEV)
+====================================================================
+
+1. docker compose up -d --build (sau dev-start dacă există)
+2. La schimbări DB: **alembic upgrade head** în container backend
+3. Seed hartă (opțional): **poetry run python scripts/seed_community_map_demo.py**
+4. .env: DATABASE_*, STRIPE, TIKTOK_*, GEMINI_API_KEY, OLLAMA_URL (host), STABLE_VIDEO_URL
+
+====================================================================
+## URMĂTORII PAȘI (IDEI)
+====================================================================
+
+- Sync metrici reale TikTok → stats_* sau tabel reporting
+- Community feed îmbunătățit
+- WebSocket job video
 
 ====================================================================

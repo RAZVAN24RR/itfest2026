@@ -62,6 +62,11 @@ export default function Dashboard() {
             setIsLoading(false);
         }
     };
+    // evită overlay blocat la infinit dacă API nu răspunde
+    useEffect(() => {
+        const t = setTimeout(() => setIsLoading(false), 12000);
+        return () => clearTimeout(t);
+    }, []);
 
     useEffect(() => {
         fetchCampaigns();
@@ -178,7 +183,7 @@ export default function Dashboard() {
                 onNavigate={(page) => setActivePage(page)}
             />
 
-            <div className="flex flex-1 max-w-7xl mx-auto w-full relative">
+            <div className="flex flex-1 max-w-7xl mx-auto w-full relative min-h-[calc(100vh-5rem)] lg:min-h-[calc(100vh-4rem)]">
                 {/* Desktop Sidebar */}
                 <aside className="w-72 bg-white border-r border-slate-100 hidden lg:flex flex-col p-8 sticky top-16 h-[calc(100vh-4rem)]">
                     <div className="space-y-4 flex-1">
@@ -247,10 +252,10 @@ export default function Dashboard() {
                     </div>
                 </aside>
 
-                <main className="flex-1 min-h-0 min-w-0 p-4 sm:p-10 overflow-y-auto overflow-x-hidden pb-32 lg:pb-10 relative">
-                    {isLoading && (
-                        <div className="absolute inset-0 bg-white/40 z-50 flex items-center justify-center backdrop-blur-md">
-                            <div className="bg-white p-6 rounded-3xl shadow-2xl border border-slate-100 flex flex-col items-center gap-4">
+                <main className="flex-1 w-full min-w-0 p-4 sm:p-10 overflow-y-auto pb-32 lg:pb-10 relative min-h-[50vh]">
+                    {isLoading && activePage === 'overview' && (
+                        <div className="absolute inset-0 bg-white/60 z-30 flex items-center justify-center backdrop-blur-sm pointer-events-none">
+                            <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100 flex flex-col items-center gap-4 pointer-events-auto">
                                 <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-purple-600"></div>
                                 <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Sincronizare...</span>
                             </div>
